@@ -1,15 +1,24 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Mic, MicOff, Play, Square, SkipForward, RotateCcw } from 'lucide-react';
+import { Mic, MicOff, Play, Square, SkipForward } from 'lucide-react';
 import SessionTimer from './SessionTimer';
 import DrillCard from './DrillCard';
 import VoiceWave from './VoiceWave';
 import CameraFeed from './CameraFeed';
 
+interface UserProfile {
+  name: string;
+  experience: 'beginner' | 'intermediate' | 'advanced' | 'pro';
+  stance: 'orthodox' | 'southpaw';
+  focus: 'technique' | 'cardio' | 'power' | 'defense';
+}
+
 interface VoiceCoachProps {
   mistralKey: string;
   elevenLabsKey: string;
+  userProfile: UserProfile;
+  onSessionComplete: (data: any) => void;
 }
 
 interface Drill {
@@ -72,14 +81,13 @@ const BOXING_DRILLS: Drill[] = [
   },
 ];
 
-export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
+export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onSessionComplete }: VoiceCoachProps) {
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(BOXING_DRILLS[0].duration);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [sessionComplete, setSessionComplete] = useState(false);
-  const [coachMessage, setCoachMessage] = useState('Ready to train? Enable your camera and press start when you are.');
+  const [coachMessage, setCoachMessage] = useState(`Welcome ${userProfile.name}! Enable your camera and press start when you're ready.`);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisFeedback, setAnalysisFeedback] = useState<string | null>(null);
 
@@ -120,9 +128,21 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
       setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
       announceDrill(BOXING_DRILLS[nextIndex], true);
     } else {
-      setSessionComplete(true);
-      setIsActive(false);
-      setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
+      // Session complete - report data
+      const sessionData = {
+        duration: BOXING_DRILLS.reduce((acc, drill) => acc + drill.duration, 0),
+        drillsCompleted: BOXING_DRILLS.length,
+        punchesThrown: Math.floor(Math.random() * 200) + 100, // Placeholder - real data from analysis
+        accuracy: Math.floor(Math.random() * 30) + 70, // Placeholder
+        caloriesBurned: Math.floor(Math.random() * 300) + 200, // Placeholder
+        coachFeedback: [
+          'Good stance throughout most drills',
+          'Keep working on hip rotation for power',
+          'Excellent hand speed in round 3',
+          'Remember to breathe consistently',
+        ],
+      };
+      onSessionComplete(sessionData);
     }
   };
 
@@ -139,7 +159,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   const startSession = () => {
     setIsActive(true);
     setIsSpeaking(true);
-    setCoachMessage(`Welcome to Fight Corner. I'm watching your form. Let's start with ${currentDrill.name}. Get in your stance.`);
+    const greeting = userProfile.name ? `Welcome back ${userProfile.name}!` : 'Welcome to Fight Corner!';
+    setCoachMessage(`${greeting} I'm watching your form. Let's start with ${currentDrill.name}. Get in your stance.`);
     
     // TODO: @Mi_codex_bot - ElevenLabs welcome message
     // Also start the camera analysis loop
@@ -152,44 +173,24 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   };
 
   const endSession = () => {
-    setIsActive(false);
-    setSessionComplete(true);
-    setCoachMessage('Session ended early. Great effort! Come back stronger next time.');
+    const completedDrills = currentDrillIndex;
+    const totalDuration = BOXING_DRILLS.slice(0, completedDrills).reduce((acc, drill) => acc + drill.duration, 0)
+      + (BOXING_DRILLS[completedDrills]?.duration || 0) - timeRemaining;
+    
+    const sessionData = {
+      duration: totalDuration,
+      drillsCompleted: completedDrills,
+      punchesThrown: Math.floor(Math.random() * 150) + 50,
+      accuracy: Math.floor(Math.random() * 25) + 65,
+      caloriesBurned: Math.floor(Math.random() * 200) + 100,
+      coachFeedback: [
+        'Session ended early but good effort',
+        'Focus on completing full rounds next time',
+        'Your stance is improving',
+      ],
+    };
+    onSessionComplete(sessionData);
   };
-
-  const resetSession = () => {
-    setSessionComplete(false);
-    setIsActive(false);
-    setCurrentDrillIndex(0);
-    setTimeRemaining(BOXING_DRILLS[0].duration);
-    setCoachMessage('Ready to train? Enable your camera and press start when you are.');
-    setAnalysisFeedback(null);
-  };
-
-  if (sessionComplete) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
-            <span className="text-4xl">🥊</span>
-          </div>
-          <h2 className="text-3xl font-bold mb-4 gradient-text">Session Complete!</h2>
-          <p className="text-gray-400 mb-6">
-            You crushed {BOXING_DRILLS.length} rounds. The champion's path is built one session at a time.
-          </p>
-          <div className="space-y-3">
-            <button
-              onClick={resetSession}
-              className="w-full py-3 bg-boxing-red hover:bg-red-600 rounded-lg font-semibold flex items-center justify-center gap-2"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Start New Session
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen p-6 flex flex-col">
