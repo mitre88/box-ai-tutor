@@ -46,12 +46,6 @@ export default function ApiKeyInput({ onSubmit }: ApiKeyInputProps) {
     setIsLoading(true);
     setStatus(null);
     try {
-      // Format validation first
-      const isMistralValid = mistralKey.startsWith('sk-') && mistralKey.length > 20;
-      const isElevenLabsValid = elevenLabsKey.length > 20;
-      if (!isMistralValid) throw new Error('Invalid Mistral key format');
-      if (!isElevenLabsValid) throw new Error('Invalid ElevenLabs key format');
-
       await Promise.all([
         testKey('/api/mistral/test', mistralKey.trim()),
         testKey('/api/elevenlabs/test', elevenLabsKey.trim()),
@@ -98,7 +92,7 @@ export default function ApiKeyInput({ onSubmit }: ApiKeyInputProps) {
                 type={showMistral ? 'text' : 'password'}
                 value={mistralKey}
                 onChange={(e) => setMistralKey(e.target.value)}
-                placeholder="sk-xxxxxxxxxxxx"
+                placeholder="Paste your Mistral key"
                 className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)]
                            focus:border-boxing-red focus:outline-none transition-all
                            text-[color:var(--text)] placeholder:text-[color:var(--muted)]"
@@ -127,7 +121,7 @@ export default function ApiKeyInput({ onSubmit }: ApiKeyInputProps) {
                 type={showElevenLabs ? 'text' : 'password'}
                 value={elevenLabsKey}
                 onChange={(e) => setElevenLabsKey(e.target.value)}
-                placeholder="xxxxxxxxxxxx"
+                placeholder="Paste your ElevenLabs key"
                 className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)]
                            focus:border-boxing-red focus:outline-none transition-all
                            text-[color:var(--text)] placeholder:text-[color:var(--muted)]"

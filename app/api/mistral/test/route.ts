@@ -8,11 +8,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    // Light format validation (Mistral commonly uses sk- prefix)
-    if (!key.startsWith('sk-') || key.length < 20) {
-      return NextResponse.json({ ok: false, error: 'Invalid key format' }, { status: 400 });
-    }
-
     // Network validation: attempt to fetch models.
     const r = await fetch('https://api.mistral.ai/v1/models', {
       headers: {

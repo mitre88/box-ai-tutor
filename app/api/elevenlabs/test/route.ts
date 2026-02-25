@@ -8,10 +8,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    if (key.length < 20) {
-      return NextResponse.json({ ok: false, error: 'Invalid key format' }, { status: 400 });
-    }
-
     const r = await fetch('https://api.elevenlabs.io/v1/user', {
       headers: {
         'xi-api-key': key,
