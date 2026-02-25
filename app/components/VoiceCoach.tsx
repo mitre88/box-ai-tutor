@@ -74,16 +74,48 @@ const BOXING_DRILLS: Drill[] = [
 
 const VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 
+const STYLE_PRESETS = {
+  hype: {
+    label: 'Hype Coach',
+    prompt: 'Sound like a high-energy ringside coach. Short, punchy, motivational lines.'
+  },
+  technical: {
+    label: 'Technical',
+    prompt: 'Be precise and technical. Call out footwork, guard, and hip rotation.'
+  },
+  zen: {
+    label: 'Zen Focus',
+    prompt: 'Stay calm and centered. Emphasize breathing, balance, and flow.'
+  }
+} as const;
+
+type StylePreset = keyof typeof STYLE_PRESETS;
+
+const POST_ROUND_CHECKLIST = [
+  'Breathe deep through the nose',
+  'Reset guard to cheeks',
+  'Loosen shoulders and shake arms',
+  'Check stance width + balance',
+  'Small sip of water if needed'
+];
+
 export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState(BOXING_DRILLS[0].duration);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
   const [coachMessage, setCoachMessage] = useState('Ready to train? Enable your camera and press start when you are.');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisFeedback, setAnalysisFeedback] = useState<string | null>(null);
+  const [feedbackTone, setFeedbackTone] = useState<'good' | 'adjust' | 'neutral'>('neutral');
+  const [feedbackLabel, setFeedbackLabel] = useState<string | null>(null);
+  const [stylePreset, setStylePreset] = useState<StylePreset>('hype');
+  const [autoListen, setAutoListen] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
+  const [checklistState, setChecklistState] = useState<boolean[]>(POST_ROUND_CHECKLIST.map(() => false));
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [voiceStatus, setVoiceStatus] = useState('Idle');
@@ -94,34 +126,57 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const autoListenTimeoutRef = useRef<number | null>(null);
+  const bellContextRef = useRef<AudioContext | null>(null);
 
   const currentDrill = BOXING_DRILLS[currentDrillIndex];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (isActive && !isPaused && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining((prev) => prev - 1);
       }, 1000);
-    } else if (timeRemaining === 0) {
-      handleDrillComplete();
+    } else if (timeRemaining === 0 && isActive && !showChecklist) {
+      handleRoundComplete();
     }
 
     return () => clearInterval(interval);
-  }, [isActive, isPaused, timeRemaining]);
+  }, [isActive, isPaused, timeRemaining, showChecklist]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (isActive && !isPaused) {
+      interval = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isActive, isPaused]);
 
   // Frame analysis callback
   const handleFrame = useCallback(async (videoElement: HTMLVideoElement) => {
     if (!isActive || isPaused) return;
-    
+
     setIsAnalyzing(true);
     // Placeholder analysis (Mistral Vision could go here)
     setTimeout(() => {
-      setAnalysisFeedback('Maintain your guard higher and keep your chin tucked.');
+      const feedbackPool = [
+        { text: 'Guard high, elbows in.', tone: 'adjust' },
+        { text: 'Great balance. Keep it!', tone: 'good' },
+        { text: 'Chin tucked, eyes forward.', tone: 'adjust' },
+        { text: 'Nice bounce and rhythm.', tone: 'good' }
+      ] as const;
+      const pick = feedbackPool[Math.floor(Math.random() * feedbackPool.length)];
+      setAnalysisFeedback(pick.text);
+      setFeedbackTone(pick.tone);
+      setFeedbackLabel(pick.tone === 'good' ? 'Form locked' : 'Adjust form');
       setIsAnalyzing(false);
     }, 900);
-  }, [isActive, isPaused, mistralKey]);
+  }, [isActive, isPaused]);
 
   const speakText = useCallback(async (text: string) => {
     if (!text.trim()) return;
@@ -178,7 +233,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         messages: [
           {
             role: 'system',
-            content: 'You are a boxing coach. Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.'
+            content: `You are a boxing coach. ${STYLE_PRESETS[stylePreset].prompt} Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.`
           },
           {
             role: 'user',
@@ -195,19 +250,72 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
     const data = await response.json();
     return data?.choices?.[0]?.message?.content?.trim() || 'Keep moving with purpose and stay relaxed in the shoulders.';
-  }, [mistralKey]);
+  }, [mistralKey, stylePreset]);
 
-  const handleDrillComplete = () => {
-    if (currentDrillIndex < BOXING_DRILLS.length - 1) {
-      const nextIndex = currentDrillIndex + 1;
-      setCurrentDrillIndex(nextIndex);
-      setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
-      announceDrill(BOXING_DRILLS[nextIndex], true);
-    } else {
+  const storeSessionRecap = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    const roundsCompleted = Math.min(
+      BOXING_DRILLS.length,
+      currentDrillIndex + (timeRemaining === 0 ? 1 : 0)
+    );
+    const recap = `Rounds: ${roundsCompleted} / ${BOXING_DRILLS.length}\nStyle: ${STYLE_PRESETS[stylePreset].label}\nTop focus: ${analysisFeedback || 'Guard, balance, breathing.'}`;
+    sessionStorage.setItem('lastSessionSeconds', String(elapsedSeconds));
+    sessionStorage.setItem('lastSessionSummary', recap);
+  }, [analysisFeedback, currentDrillIndex, elapsedSeconds, stylePreset, timeRemaining]);
+
+  const playBell = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    if (!bellContextRef.current) {
+      const AudioContextImpl = window.AudioContext || (window as any).webkitAudioContext;
+      bellContextRef.current = new AudioContextImpl();
+    }
+    const ctx = bellContextRef.current;
+    const now = ctx.currentTime;
+
+    const createTone = (freq: number, start: number, duration: number) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.value = 0.0001;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.start(start);
+      osc.stop(start + duration);
+    };
+
+    createTone(540, now, 0.35);
+    createTone(720, now + 0.08, 0.35);
+  }, []);
+
+  const handleRoundComplete = () => {
+    playBell();
+    if (currentDrillIndex >= BOXING_DRILLS.length - 1) {
       setSessionComplete(true);
       setIsActive(false);
       setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
+      storeSessionRecap();
+      return;
     }
+    setShowChecklist(true);
+    setChecklistState(POST_ROUND_CHECKLIST.map(() => false));
+    setIsPaused(true);
+  };
+
+  const handleDrillComplete = () => {
+    const nextIndex = currentDrillIndex + 1;
+    setCurrentDrillIndex(nextIndex);
+    setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
+    announceDrill(BOXING_DRILLS[nextIndex], true);
+    playBell();
+  };
+
+  const continueAfterChecklist = () => {
+    setShowChecklist(false);
+    setIsPaused(false);
+    handleDrillComplete();
   };
 
   const announceDrill = (drill: Drill, autoPlay: boolean = false) => {
@@ -219,6 +327,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
   const startSession = () => {
     setIsActive(true);
+    setIsPaused(false);
+    playBell();
     const welcome = `Welcome to Fight Corner. I'm watching your form. Let's start with ${currentDrill.name}. Get in your stance.`;
     setCoachMessage(welcome);
     speakText(welcome);
@@ -232,15 +342,22 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
     setIsActive(false);
     setSessionComplete(true);
     setCoachMessage('Session ended early. Great effort! Come back stronger next time.');
+    storeSessionRecap();
   };
 
   const resetSession = () => {
     setSessionComplete(false);
     setIsActive(false);
+    setIsPaused(false);
     setCurrentDrillIndex(0);
     setTimeRemaining(BOXING_DRILLS[0].duration);
+    setElapsedSeconds(0);
     setCoachMessage('Ready to train? Enable your camera and press start when you are.');
     setAnalysisFeedback(null);
+    setFeedbackTone('neutral');
+    setFeedbackLabel(null);
+    setShowChecklist(false);
+    setChecklistState(POST_ROUND_CHECKLIST.map(() => false));
     setLastTranscript(null);
     setLastCoachReply(null);
     setVoiceStatus('Idle');
@@ -307,6 +424,25 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
     }
   };
 
+  useEffect(() => {
+    if (!autoListen || !isActive || isPaused) return;
+    if (isRecording || isProcessingVoice || isSpeaking) return;
+
+    startRecording();
+    autoListenTimeoutRef.current = window.setTimeout(() => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        stopRecording();
+      }
+    }, 3500);
+
+    return () => {
+      if (autoListenTimeoutRef.current) {
+        window.clearTimeout(autoListenTimeoutRef.current);
+        autoListenTimeoutRef.current = null;
+      }
+    };
+  }, [autoListen, isActive, isPaused, isRecording, isProcessingVoice, isSpeaking]);
+
   if (sessionComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
@@ -359,6 +495,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           <CameraFeed 
             onFrame={handleFrame} 
             isAnalyzing={isAnalyzing}
+            feedbackLabel={feedbackLabel}
+            feedbackTone={feedbackTone}
           />
 
           {/* Analysis Feedback */}
@@ -377,6 +515,28 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <p className="text-lg text-white/90 italic">"{coachMessage}"</p>
           </div>
 
+          {/* Coach Style */}
+          <div className="glass-card rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Coach Style</h3>
+                <p className="text-xs text-gray-400">Pick the vibe for your prompts</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(Object.keys(STYLE_PRESETS) as StylePreset[]).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => setStylePreset(style)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
+                    ${stylePreset === style ? 'bg-boxing-red border-boxing-red text-white' : 'border-white/15 text-gray-300 hover:border-boxing-red/60'}`}
+                >
+                  {STYLE_PRESETS[style].label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Voice Interaction */}
           <div className="glass-card rounded-xl p-4 mb-4">
             <div className="flex items-center justify-between mb-3">
@@ -392,6 +552,15 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
                 }`}
               >
                 {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+              <span>Hands-free auto listen</span>
+              <button
+                onClick={() => setAutoListen((v) => !v)}
+                className={`px-3 py-1 rounded-full border transition-all ${autoListen ? 'border-emerald-400/50 text-emerald-200 bg-emerald-500/10' : 'border-white/15 text-gray-300'}`}
+              >
+                {autoListen ? 'On' : 'Off'}
               </button>
             </div>
             {recordingError && (
@@ -416,7 +585,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
           {/* Timer */}
           {isActive && (
-            <div className="flex justify-center mb-4">
+            <div className="flex flex-col items-center mb-4 gap-2">
+              <div className="text-xs uppercase tracking-[0.3em] text-gray-500">Round {currentDrillIndex + 1} / {BOXING_DRILLS.length}</div>
               <SessionTimer seconds={timeRemaining} />
             </div>
           )}
@@ -501,6 +671,46 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           )}
         </div>
       </div>
+
+      {showChecklist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-white/10">
+            <h3 className="text-xl font-semibold mb-2">Post-round reset</h3>
+            <p className="text-sm text-gray-400 mb-4">Quick checklist before the next bell.</p>
+            <div className="space-y-3 mb-4">
+              {POST_ROUND_CHECKLIST.map((item, idx) => (
+                <label key={item} className="flex items-center gap-3 text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={checklistState[idx]}
+                    onChange={(e) => {
+                      const next = [...checklistState];
+                      next[idx] = e.target.checked;
+                      setChecklistState(next);
+                    }}
+                    className="w-4 h-4 rounded border-white/20 bg-black/40"
+                  />
+                  {item}
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={continueAfterChecklist}
+                className="flex-1 py-2 rounded-lg border border-white/20 text-sm"
+              >
+                Skip
+              </button>
+              <button
+                onClick={continueAfterChecklist}
+                className="flex-1 py-2 rounded-lg bg-boxing-red hover:bg-red-600 text-sm font-semibold"
+              >
+                Next round
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer info */}
       <footer className="mt-6 pt-4 text-center border-t border-white/10">

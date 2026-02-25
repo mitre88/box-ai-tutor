@@ -8,6 +8,7 @@ export default function SummaryPage() {
   const { locale, messages } = useI18n();
   const [seconds, setSeconds] = useState<number | null>(null);
   const [summary, setSummary] = useState<string>('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -16,6 +17,14 @@ export default function SummaryPage() {
     setSeconds(s ? Number(s) : null);
     setSummary(txt || '');
   }, []);
+
+  const handleCopy = async () => {
+    const duration = seconds === null ? '—' : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+    const recap = `Fight Corner recap\nDuration: ${duration}\n${summary || '—'}`;
+    await navigator.clipboard.writeText(recap);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   return (
     <div className="space-y-6">
@@ -34,6 +43,13 @@ export default function SummaryPage() {
         <pre className="whitespace-pre-wrap text-sm text-[color:var(--text)] bg-black/10 p-3 rounded-lg border border-[color:var(--border)]">
           {summary || '—'}
         </pre>
+
+        <button
+          onClick={handleCopy}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all text-sm"
+        >
+          {copied ? 'Copied!' : 'Share recap (copy)'}
+        </button>
       </div>
 
       <Link

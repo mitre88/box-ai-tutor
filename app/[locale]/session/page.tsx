@@ -1,51 +1,26 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { loadKeys } from '../../lib/storage';
-import SessionTimer from '../../components/SessionTimer';
-import CameraFeed from '../../components/CameraFeed';
+import VoiceCoach from '../../components/VoiceCoach';
 
 export default function SessionPage() {
   const { locale, messages } = useI18n();
-  const router = useRouter();
 
+  const [keys, setKeys] = useState<{ mistralKey: string; elevenLabsKey: string } | null>(null);
   const [hasKeys, setHasKeys] = useState<boolean | null>(null);
-  const [running, setRunning] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const tickRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setHasKeys(!!loadKeys());
+    const existing = loadKeys();
+    setKeys(existing);
+    setHasKeys(!!existing);
   }, []);
 
-  useEffect(() => {
-    if (!running) {
-      if (tickRef.current) window.clearInterval(tickRef.current);
-      tickRef.current = null;
-      return;
-    }
-
-    tickRef.current = window.setInterval(() => setSeconds((s) => s + 1), 1000);
-
-    return () => {
-      if (tickRef.current) window.clearInterval(tickRef.current);
-      tickRef.current = null;
-    };
-  }, [running]);
-
-  const stop = () => setRunning(false);
-
-  const endAndSummary = () => {
-    stop();
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('lastSessionSeconds', String(seconds));
-      sessionStorage.setItem('lastSessionSummary', 'TODO: generate summary via Mistral.');
-    }
-    router.push(`/${locale}/summary`);
-  };
+  if (hasKeys && keys) {
+    return <VoiceCoach mistralKey={keys.mistralKey} elevenLabsKey={keys.elevenLabsKey} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -65,36 +40,6 @@ export default function SessionPage() {
           </Link>
         </div>
       )}
-
-      <div className="glass-card rounded-xl p-5 space-y-4">
-        <SessionTimer seconds={seconds} />
-        <div className="flex flex-wrap gap-3 justify-center">
-          {!running ? (
-            <button
-              onClick={() => setRunning(true)}
-              className="px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold transition-all"
-            >
-              {messages.session.start}
-            </button>
-          ) : (
-            <button
-              onClick={stop}
-              className="px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
-            >
-              {messages.session.stop}
-            </button>
-          )}
-
-          <button
-            onClick={endAndSummary}
-            className="px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
-          >
-            {messages.session.endAndSummary}
-          </button>
-        </div>
-      </div>
-
-      <CameraFeed isAnalyzing={running} />
     </div>
   );
 }

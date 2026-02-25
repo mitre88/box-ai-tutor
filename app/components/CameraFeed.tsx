@@ -6,9 +6,11 @@ import { Camera, CameraOff, RefreshCw } from 'lucide-react';
 interface CameraProps {
   onFrame?: (videoElement: HTMLVideoElement) => void;
   isAnalyzing?: boolean;
+  feedbackLabel?: string | null;
+  feedbackTone?: 'good' | 'adjust' | 'neutral';
 }
 
-export default function CameraFeed({ onFrame, isAnalyzing }: CameraProps) {
+export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedbackTone = 'neutral' }: CameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isActive, setIsActive] = useState(false);
@@ -109,6 +111,17 @@ export default function CameraFeed({ onFrame, isAnalyzing }: CameraProps) {
             </div>
           )}
 
+          {feedbackLabel && (
+            <div className={`absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border backdrop-blur
+              ${feedbackTone === 'good' ? 'bg-emerald-500/20 border-emerald-400/40 text-emerald-100' :
+                feedbackTone === 'adjust' ? 'bg-amber-500/20 border-amber-400/40 text-amber-100' :
+                'bg-slate-500/20 border-slate-400/40 text-slate-100'}`}
+            >
+              <span className="w-2 h-2 rounded-full bg-current" />
+              {feedbackLabel}
+            </div>
+          )}
+
           {/* Camera controls */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-3">
             <button
@@ -127,6 +140,9 @@ export default function CameraFeed({ onFrame, isAnalyzing }: CameraProps) {
 
           {/* Grid overlay for boxing reference */}
           <div className="absolute inset-0 pointer-events-none">
+            <div className={`absolute inset-0 ring-2 rounded-xl transition-all duration-300
+              ${feedbackTone === 'good' ? 'ring-emerald-400/40' : feedbackTone === 'adjust' ? 'ring-amber-400/40' : 'ring-transparent'}`}
+            />
             <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
               {[...Array(9)].map((_, i) => (
                 <div key={i} className="border border-white/5" />
