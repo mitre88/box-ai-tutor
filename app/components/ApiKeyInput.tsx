@@ -12,36 +12,54 @@ interface ApiKeyInputProps {
   onSubmit: (keys: ApiKeys) => void;
 }
 
+async function testKey(url: string, key: string) {
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ key }),
+  });
+  if (!r.ok) {
+    const data = await r.json().catch(() => ({}));
+    throw new Error(data?.error || `Request failed (${r.status})`);
+  }
+  return true;
+}
+
 export default function ApiKeyInput({ onSubmit }: ApiKeyInputProps) {
   const [mistralKey, setMistralKey] = useState('');
   const [elevenLabsKey, setElevenLabsKey] = useState('');
   const [showMistral, setShowMistral] = useState(false);
   const [showElevenLabs, setShowElevenLabs] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const handleTest = async () => {
+    setIsLoading(true);
+    setStatus(null);
+    try {
+      // Format validation first
+      const isMistralValid = mistralKey.startsWith('sk-') && mistralKey.length > 20;
+      const isElevenLabsValid = elevenLabsKey.length > 20;
+      if (!isMistralValid) throw new Error('Invalid Mistral key format');
+      if (!isElevenLabsValid) throw new Error('Invalid ElevenLabs key format');
+
+      await Promise.all([
+        testKey('/api/mistral/test', mistralKey.trim()),
+        testKey('/api/elevenlabs/test', elevenLabsKey.trim()),
+      ]);
+
+      setStatus({ type: 'ok', text: 'Keys look valid.' });
+    } catch (e: any) {
+      setStatus({ type: 'err', text: e?.message || 'Could not validate the keys.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mistralKey.trim() || !elevenLabsKey.trim()) return;
-    
-    setIsLoading(true);
-    
-    // Validate key formats
-    const isMistralValid = mistralKey.startsWith('sk-') && mistralKey.length > 20;
-    const isElevenLabsValid = elevenLabsKey.length > 20;
-    
-    if (!isMistralValid) {
-      alert('Please enter a valid Mistral API key (starts with sk-)');
-      setIsLoading(false);
-      return;
-    }
-    
-    if (!isElevenLabsValid) {
-      alert('Please enter a valid ElevenLabs API key');
-      setIsLoading(false);
-      return;
-    }
-    
-    onSubmit({ mistralKey, elevenLabsKey });
+    onSubmit({ mistralKey: mistralKey.trim(), elevenLabsKey: elevenLabsKey.trim() });
   };
 
   return (

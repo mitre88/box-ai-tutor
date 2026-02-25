@@ -2,8 +2,8 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Fight Corner Coach',
-  description: 'AI-powered voice boxing coach',
+  title: 'Box AI Tutor',
+  description: 'Box AI Tutor web (Next.js + App Router)',
 }
 
 export default function RootLayout({
