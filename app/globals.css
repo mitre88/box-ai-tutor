@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --boxing-red: #ff2d2d;
+  --dark-bg: #0a0a0c;
+  --dark-card: #141416;
+}
+
+body {
+  background: var(--dark-bg);
+  color: white;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Neon glow effect */
+.neon-glow {
+  box-shadow: 0 0 20px rgba(255, 45, 45, 0.5),
+              0 0 40px rgba(255, 45, 45, 0.3);
+}
+
+/* Voice wave animation bars */
+.voice-bar {
+  width: 4px;
+  background: var(--boxing-red);
+  border-radius: 2px;
+  animation: wave 1.2s ease-in-out infinite;
+}
+
+.voice-bar:nth-child(2) { animation-delay: 0.1s; }
+.voice-bar:nth-child(3) { animation-delay: 0.2s; }
+.voice-bar:nth-child(4) { animation-delay: 0.3s; }
+.voice-bar:nth-child(5) { animation-delay: 0.4s; }
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.5); }
+  50% { transform: scaleY(1); }
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #ff2d2d 0%, #ff6b6b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Pulse ring for active state */
+.pulse-ring {
+  position: relative;
+}
+
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  border: 2px solid var(--boxing-red);
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
