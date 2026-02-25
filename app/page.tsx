@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ApiKeyInput from './components/ApiKeyInput';
 import VoiceCoach from './components/VoiceCoach';
 
@@ -11,6 +11,17 @@ interface ApiKeys {
 
 export default function Home() {
   const [apiKeys, setApiKeys] = useState<ApiKeys | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const storedMistral = sessionStorage.getItem('mistralApiKey') || process.env.NEXT_PUBLIC_MISTRAL_API_KEY || '';
+    const storedEleven = sessionStorage.getItem('elevenLabsApiKey') || process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY || '';
+
+    if (storedMistral && storedEleven) {
+      setApiKeys({ mistralKey: storedMistral, elevenLabsKey: storedEleven });
+    }
+  }, []);
 
   const handleApiKeySubmit = (keys: ApiKeys) => {
     setApiKeys(keys);

@@ -1,20 +1,19 @@
 # Fight Corner Coach
 
-Voice-first AI boxing coach for Mistral Iterate Hackathon.
+Voice-first boxing coach with camera preview, drill timers, and API key inputs for **Mistral** (vision analysis) and **ElevenLabs** (voice feedback).
 
 ## Stack
 - **Framework**: Next.js 14 (App Router)
-- **Styling**: Tailwind CSS
-- **Voice**: ElevenLabs API
-- **AI**: Mistral API (user-provided key)
-- **Deployment**: Vercel
+- **UI**: Tailwind CSS
+- **Voice**: ElevenLabs API (client key entry)
+- **Vision/AI**: Mistral API (client key entry)
+- **Deployment**: Vercel-ready
 
 ## Features
-- API key input on first launch
-- Voice-guided training sessions
-- Real-time audio streaming
-- Session summaries
-- "Next drill" recommendations
+- Voice-first training flow with drill sequencing
+- Camera preview with stance grid overlay
+- In-session timer + drill tips
+- Local API key entry (stored in `sessionStorage`)
 
 ## Project Structure
 ```
@@ -22,25 +21,14 @@ app/
 ├── page.tsx              # Main entry
 ├── layout.tsx            # Root layout
 ├── globals.css           # Tailwind + custom styles
-├── components/
-│   ├── ApiKeyInput.tsx   # Mistral key setup
-│   ├── VoiceCoach.tsx    # Main voice interface
-│   ├── SessionTimer.tsx  # Training timer
-│   ├── DrillCard.tsx     # Exercise display
-│   └── SummaryView.tsx   # Post-session recap
-├── hooks/
-│   ├── useElevenLabs.ts  # Voice synthesis
-│   └── useMistral.ts     # AI coaching logic
-└── lib/
-    ├── elevenlabs.ts     # Voice API client
-    └── mistral.ts        # Mistral API client
+└── components/
+    ├── ApiKeyInput.tsx   # Mistral + ElevenLabs key form
+    ├── CameraFeed.tsx    # Camera preview + frame capture loop
+    ├── VoiceCoach.tsx    # Main coaching UI
+    ├── DrillCard.tsx     # Drill display
+    ├── SessionTimer.tsx  # Training timer
+    └── VoiceWave.tsx     # Voice activity visualization
 ```
-
-## Design System
-- **Dark theme**: #0a0a0c background
-- **Accent**: #ff2d2d (boxing red)
-- **Voice wave**: Animated audio visualization
-- **Glass cards**: backdrop-blur effects
 
 ## Getting Started
 ```bash
@@ -49,8 +37,15 @@ npm run dev
 ```
 
 ## Environment Variables
+This app expects keys to be entered in the UI. For hosting convenience, you can also provide defaults via:
 ```
-NEXT_PUBLIC_ELEVENLABS_API_KEY=your_key
+NEXT_PUBLIC_MISTRAL_API_KEY=
+NEXT_PUBLIC_ELEVENLABS_API_KEY=
 ```
 
-Note: Mistral API key is entered by user in the app.
+## Deployment
+- **Vercel**: import the repo, set env vars (optional), deploy.
+- **Node**: `npm run build && npm start`
+
+---
+Built for the Mistral Iterate Hackathon.
