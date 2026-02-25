@@ -1,26 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Mic, MicOff, Play, Square, SkipForward, AlertCircle } from 'lucide-react';
+import { Mic, MicOff, Play, Square, SkipForward, RotateCcw, AudioLines } from 'lucide-react';
 import SessionTimer from './SessionTimer';
 import DrillCard from './DrillCard';
 import VoiceWave from './VoiceWave';
 import CameraFeed from './CameraFeed';
-import { useElevenLabs } from '../hooks/useElevenLabs';
-import { useMistralVision } from '../hooks/useMistralVision';
-
-interface UserProfile {
-  name: string;
-  experience: 'beginner' | 'intermediate' | 'advanced' | 'pro';
-  stance: 'orthodox' | 'southpaw';
-  focus: 'technique' | 'cardio' | 'power' | 'defense';
-}
 
 interface VoiceCoachProps {
   mistralKey: string;
   elevenLabsKey: string;
-  userProfile: UserProfile;
-  onSessionComplete: (data: any) => void;
 }
 
 interface Drill {
@@ -32,69 +21,88 @@ interface Drill {
   instructions: string[];
 }
 
-// Drills adaptados por nivel de experiencia
-const DRILLS_BY_LEVEL: Record<UserProfile['experience'], Drill[]> = {
-  beginner: [
-    { id: 1, name: 'Basic Stance', description: 'Learn the fighting stance', duration: 120, type: 'warmup', instructions: ['Feet shoulder-width apart', 'Left foot forward (orthodox)', 'Hands up, elbows in'] },
-    { id: 2, name: 'Jab Practice', description: 'Master the jab', duration: 180, type: 'technique', instructions: ['Step in with jab', 'Full extension', 'Snap it back quickly'] },
-    { id: 3, name: 'Rest & Recover', description: 'Catch your breath', duration: 60, type: 'cooldown', instructions: ['Deep breathing', 'Shake out arms', 'Stay loose'] },
-  ],
-  intermediate: [
-    { id: 1, name: 'Stance & Movement', description: 'Footwork fundamentals', duration: 120, type: 'warmup', instructions: ['Stay on balls of feet', 'Light bounce', 'Stay balanced'] },
-    { id: 2, name: 'Jab-Cross Combos', description: 'Basic combinations', duration: 180, type: 'technique', instructions: ['Jab to measure', 'Cross with power', 'Return to guard'] },
-    { id: 3, name: 'Defense Basics', description: 'Slips and rolls', duration: 120, type: 'technique', instructions: ['Slip left, slip right', 'Roll under', 'Counter after defense'] },
-    { id: 4, name: 'Cool Down', description: 'Stretch and recover', duration: 120, type: 'cooldown', instructions: ['Deep breaths', 'Stretch shoulders', 'Reflect on session'] },
-  ],
-  advanced: [
-    { id: 1, name: 'Advanced Footwork', description: 'Angles and pivots', duration: 120, type: 'warmup', instructions: ['Pivot out', 'Create angles', 'Control distance'] },
-    { id: 2, name: 'Combination Flow', description: '3-4 punch combos', duration: 180, type: 'combo', instructions: ['Jab-jab-cross-hook', 'Flow smoothly', 'Maintain form'] },
-    { id: 3, name: 'Counter Punching', description: 'Defense to offense', duration: 180, type: 'technique', instructions: ['Slip and counter', 'Timing is key', 'Exploit openings'] },
-    { id: 4, name: 'Power Round', description: 'Maximum output', duration: 60, type: 'combo', instructions: ['High intensity', 'Power on every shot', 'Stay technical'] },
-    { id: 5, name: 'Recovery', description: 'Active recovery', duration: 120, type: 'cooldown', instructions: ['Controlled breathing', 'Light movement', 'Stay warm'] },
-  ],
-  pro: [
-    { id: 1, name: 'Pro Warmup', description: 'Ring movement', duration: 120, type: 'warmup', instructions: ['Circle the ring', 'In-out movement', 'Control center'] },
-    { id: 2, name: 'Precision Combos', description: 'Fight-specific patterns', duration: 180, type: 'combo', instructions: ['Body-head combinations', 'Change levels', 'Sell the fake'] },
-    { id: 3, name: 'Advanced Defense', description: 'Elusive movement', duration: 180, type: 'technique', instructions: ['Draw and counter', 'Pivot and angle', 'Make them miss'] },
-    { id: 4, name: 'Fight Simulation', description: 'Championship rounds', duration: 180, type: 'combo', instructions: ['Championship pace', 'Every shot matters', 'Mental toughness'] },
-    { id: 5, name: 'Burnout Round', description: 'Empty the tank', duration: 60, type: 'combo', instructions: ['Everything you have', 'Finish strong', 'Champion mindset'] },
-    { id: 6, name: 'Pro Cooldown', description: 'Professional recovery', duration: 180, type: 'cooldown', instructions: ['Systematic stretching', 'Mental review', 'Prepare for next'] },
-  ],
-};
+const BOXING_DRILLS: Drill[] = [
+  { 
+    id: 1, 
+    name: 'Stance & Movement', 
+    description: 'Find your balance, light on your feet', 
+    duration: 120, 
+    type: 'warmup',
+    instructions: ['Hands up, chin down', 'Bounce lightly', 'Stay on balls of feet']
+  },
+  { 
+    id: 2, 
+    name: 'Jab-Cross Fundamentals', 
+    description: 'Perfect your 1-2 combination', 
+    duration: 180, 
+    type: 'technique',
+    instructions: ['Extend jab fully', 'Rotate hips on cross', 'Return to guard quickly']
+  },
+  { 
+    id: 3, 
+    name: 'Speed Round', 
+    description: 'Maximum output, maintain form', 
+    duration: 60, 
+    type: 'combo',
+    instructions: ['Fast hands', 'Don\'t sacrifice technique', 'Breathe with each punch']
+  },
+  { 
+    id: 4, 
+    name: 'Defense Master', 
+    description: 'Slips, rolls, and counters', 
+    duration: 150, 
+    type: 'technique',
+    instructions: ['Slip left, slip right', 'Roll under imaginary punches', 'Counter after defense']
+  },
+  { 
+    id: 5, 
+    name: 'Hooks & Uppercuts', 
+    description: 'Power shots from close range', 
+    duration: 180, 
+    type: 'combo',
+    instructions: ['Keep elbow up on hooks', 'Drive from legs on uppercuts', 'Stay balanced']
+  },
+  { 
+    id: 6, 
+    name: 'Cool Down', 
+    description: 'Breathing and stretching', 
+    duration: 120, 
+    type: 'cooldown',
+    instructions: ['Deep breaths', 'Shake out arms', 'Reflect on session']
+  },
+];
 
-export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onSessionComplete }: VoiceCoachProps) {
-  const { speak } = useElevenLabs(elevenLabsKey);
-  const { analyzeFrame } = useMistralVision(mistralKey);
-  
-  const drills = DRILLS_BY_LEVEL[userProfile.experience];
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  
+const VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
+
+export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(drills[0].duration);
+  const [timeRemaining, setTimeRemaining] = useState(BOXING_DRILLS[0].duration);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [coachMessage, setCoachMessage] = useState(`Welcome ${userProfile.name}! Enable your camera and press start when ready.`);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const [coachMessage, setCoachMessage] = useState('Ready to train? Enable your camera and press start when you are.');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisFeedback, setAnalysisFeedback] = useState<string[]>([]);
-  const [poseScores, setPoseScores] = useState({ stance: 0, guard: 0, balance: 0 });
-  const [sessionStats, setSessionStats] = useState({
-    punchesEstimated: 0,
-    avgAccuracy: 0,
-    totalDuration: 0,
-    feedbackItems: [] as string[]
-  });
+  const [analysisFeedback, setAnalysisFeedback] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState('Idle');
+  const [lastTranscript, setLastTranscript] = useState<string | null>(null);
+  const [lastCoachReply, setLastCoachReply] = useState<string | null>(null);
+  const [recordingError, setRecordingError] = useState<string | null>(null);
 
-  const currentDrill = drills[currentDrillIndex];
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Timer
+  const currentDrill = BOXING_DRILLS[currentDrillIndex];
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
     if (isActive && !isPaused && timeRemaining > 0) {
       interval = setInterval(() => {
         setTimeRemaining((prev) => prev - 1);
-        setSessionStats(s => ({ ...s, totalDuration: s.totalDuration + 1 }));
       }, 1000);
     } else if (timeRemaining === 0) {
       handleDrillComplete();
@@ -103,171 +111,305 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
     return () => clearInterval(interval);
   }, [isActive, isPaused, timeRemaining]);
 
-  // Frame analysis every 3 seconds
-  useEffect(() => {
+  // Frame analysis callback
+  const handleFrame = useCallback(async (videoElement: HTMLVideoElement) => {
     if (!isActive || isPaused) return;
     
-    const interval = setInterval(() => {
-      captureAndAnalyze();
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isActive, isPaused, currentDrillIndex]);
-
-  const captureAndAnalyze = async () => {
-    // TODO: Implementar captura real de canvas
-    // Por ahora simulamos para demo
     setIsAnalyzing(true);
-    
-    try {
-      // Simular llamada a Mistral
-      await new Promise(r => setTimeout(r, 1500));
-      
-      const mockFeedback = [
-        'Hands up, chin tucked',
-        'Stay on the balls of your feet',
-        'Good rotation on that cross'
-      ];
-      
-      setAnalysisFeedback(mockFeedback);
-      setPoseScores({
-        stance: Math.floor(Math.random() * 20) + 80,
-        guard: Math.floor(Math.random() * 20) + 75,
-        balance: Math.floor(Math.random() * 20) + 85
-      });
-      
-      // Feedback por voz cada 3 análisis
-      if (Math.random() > 0.5) {
-        const randomTip = mockFeedback[Math.floor(Math.random() * mockFeedback.length)];
-        await giveVoiceFeedback(randomTip);
-      }
-      
-    } finally {
+    // Placeholder analysis (Mistral Vision could go here)
+    setTimeout(() => {
+      setAnalysisFeedback('Maintain your guard higher and keep your chin tucked.');
       setIsAnalyzing(false);
-    }
-  };
+    }, 900);
+  }, [isActive, isPaused, mistralKey]);
 
-  const giveVoiceFeedback = async (message: string) => {
+  const speakText = useCallback(async (text: string) => {
+    if (!text.trim()) return;
     setIsSpeaking(true);
-    setCoachMessage(message);
-    await speak(message);
-    setIsSpeaking(false);
-  };
 
-  const handleDrillComplete = async () => {
-    if (currentDrillIndex < drills.length - 1) {
+    try {
+      const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+          'xi-api-key': elevenLabsKey
+        },
+        body: JSON.stringify({
+          text,
+          model_id: 'eleven_monolingual_v1',
+          voice_settings: {
+            stability: 0.35,
+            similarity_boost: 0.8
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('ElevenLabs request failed');
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+      }
+      audioRef.current.src = audioUrl;
+      await audioRef.current.play();
+      audioRef.current.onended = () => {
+        URL.revokeObjectURL(audioUrl);
+        setIsSpeaking(false);
+      };
+    } catch (error) {
+      console.error(error);
+      setIsSpeaking(false);
+    }
+  }, [elevenLabsKey]);
+
+  const fetchCoachReply = useCallback(async (prompt: string) => {
+    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${mistralKey}`
+      },
+      body: JSON.stringify({
+        model: 'mistral-small-latest',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a boxing coach. Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Mistral request failed');
+    }
+
+    const data = await response.json();
+    return data?.choices?.[0]?.message?.content?.trim() || 'Keep moving with purpose and stay relaxed in the shoulders.';
+  }, [mistralKey]);
+
+  const handleDrillComplete = () => {
+    if (currentDrillIndex < BOXING_DRILLS.length - 1) {
       const nextIndex = currentDrillIndex + 1;
       setCurrentDrillIndex(nextIndex);
-      setTimeRemaining(drills[nextIndex].duration);
-      await announceDrill(drills[nextIndex]);
+      setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
+      announceDrill(BOXING_DRILLS[nextIndex], true);
     } else {
-      await completeSession();
+      setSessionComplete(true);
+      setIsActive(false);
+      setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
     }
   };
 
-  const announceDrill = async (drill: Drill) => {
-    const message = `Next up: ${drill.name}. ${drill.description}. Ready?`;
-    await giveVoiceFeedback(message);
+  const announceDrill = (drill: Drill, autoPlay: boolean = false) => {
+    setCoachMessage(`${drill.name}. ${drill.description}. Ready? Let's go!`);
+    if (autoPlay) {
+      speakText(`${drill.name}. ${drill.description}. Ready? Let's go!`);
+    }
   };
 
-  const startSession = async () => {
+  const startSession = () => {
     setIsActive(true);
-    const welcomeMsg = `Alright ${userProfile.name}, let's work on your ${userProfile.focus}. Starting with ${currentDrill.name}.`;
-    await giveVoiceFeedback(welcomeMsg);
+    const welcome = `Welcome to Fight Corner. I'm watching your form. Let's start with ${currentDrill.name}. Get in your stance.`;
+    setCoachMessage(welcome);
+    speakText(welcome);
   };
 
-  const completeSession = async () => {
-    const finalMsg = `Great work ${userProfile.name}! Session complete. You pushed hard today.`;
-    await giveVoiceFeedback(finalMsg);
-    
-    onSessionComplete({
-      duration: sessionStats.totalDuration,
-      drillsCompleted: drills.length,
-      punchesThrown: Math.floor(sessionStats.totalDuration * 1.5), // Estimado
-      accuracy: Math.floor((poseScores.stance + poseScores.guard + poseScores.balance) / 3),
-      caloriesBurned: Math.floor(sessionStats.totalDuration * 0.15),
-      coachFeedback: analysisFeedback.length > 0 ? analysisFeedback : ['Great form throughout', 'Stay consistent with training']
-    });
+  const skipDrill = () => {
+    handleDrillComplete();
   };
 
-  const skipDrill = () => handleDrillComplete();
-  const endSession = () => completeSession();
+  const endSession = () => {
+    setIsActive(false);
+    setSessionComplete(true);
+    setCoachMessage('Session ended early. Great effort! Come back stronger next time.');
+  };
+
+  const resetSession = () => {
+    setSessionComplete(false);
+    setIsActive(false);
+    setCurrentDrillIndex(0);
+    setTimeRemaining(BOXING_DRILLS[0].duration);
+    setCoachMessage('Ready to train? Enable your camera and press start when you are.');
+    setAnalysisFeedback(null);
+    setLastTranscript(null);
+    setLastCoachReply(null);
+    setVoiceStatus('Idle');
+  };
+
+  const startRecording = async () => {
+    try {
+      setRecordingError(null);
+      setVoiceStatus('Listening…');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        await processRecording();
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      setRecordingError('Microphone access denied. Please allow microphone permissions.');
+      setVoiceStatus('Mic blocked');
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+  };
+
+  const processRecording = async () => {
+    if (!audioChunksRef.current.length) return;
+    setIsProcessingVoice(true);
+
+    const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    const sizeKb = Math.round(audioBlob.size / 1024);
+    const placeholderTranscript = `STT placeholder: voice note captured (${sizeKb}kb).`;
+
+    setVoiceStatus('Transcribing…');
+    setLastTranscript(placeholderTranscript);
+
+    try {
+      setVoiceStatus('Coach thinking…');
+      const reply = await fetchCoachReply(`User said: ${placeholderTranscript}. Provide coaching feedback for the current drill: ${currentDrill.name}.`);
+      setCoachMessage(reply);
+      setLastCoachReply(reply);
+      setVoiceStatus('Speaking…');
+      await speakText(reply);
+      setVoiceStatus('Idle');
+    } catch (error) {
+      console.error(error);
+      setVoiceStatus('Error');
+    } finally {
+      setIsProcessingVoice(false);
+    }
+  };
+
+  if (sessionComplete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+            <span className="text-4xl">🥊</span>
+          </div>
+          <h2 className="text-3xl font-bold mb-4 gradient-text">Session Complete!</h2>
+          <p className="text-gray-400 mb-6">
+            You crushed {BOXING_DRILLS.length} rounds. The champion's path is built one session at a time.
+          </p>
+          <div className="space-y-3">
+            <button
+              onClick={resetSession}
+              className="w-full py-3 bg-boxing-red hover:bg-red-600 rounded-lg font-semibold flex items-center justify-center gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Start New Session
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-4 lg:p-6 flex flex-col">
+    <div className="min-h-screen p-6 flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between mb-4 lg:mb-6">
+      <header className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-xl font-bold">Fight Corner Coach</h1>
-          <p className="text-xs text-gray-400">Level: {userProfile.experience}</p>
+          <p className="text-xs text-gray-400">AI Boxing Coach with Vision + Voice</p>
         </div>
-        <div className="flex items-center gap-2">
-          {isAnalyzing && (
-            <div className="flex items-center gap-1 text-xs text-green-400">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              Analyzing...
-            </div>
-          )}
-          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 bg-dark-card/70 border border-white/10 px-3 py-1 rounded-full">
+            <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+            <span className="text-xs text-gray-300">{isActive ? 'Coach Active' : 'Standby'}</span>
+          </div>
+          <div className="flex items-center gap-2 bg-dark-card/70 border border-white/10 px-3 py-1 rounded-full">
+            <AudioLines className="w-3 h-3 text-boxing-red" />
+            <span className="text-xs text-gray-300">Voice {voiceStatus}</span>
+          </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 flex-1">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
         {/* Left Column - Camera */}
         <div className="flex flex-col gap-4">
-          <CameraFeed onFrame={() => {}} isAnalyzing={isAnalyzing} />
-
-          {/* Pose Scores */}
-          {isActive && (
-            <div className="glass-card rounded-xl p-4">
-              <h4 className="text-xs font-semibold text-gray-400 mb-3">Form Analysis</h4>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'Stance', score: poseScores.stance },
-                  { label: 'Guard', score: poseScores.guard },
-                  { label: 'Balance', score: poseScores.balance },
-                ].map((item) => (
-                  <div key={item.label} className="text-center">
-                    <div className={`text-2xl font-bold ${
-                      item.score >= 80 ? 'text-green-400' : 
-                      item.score >= 60 ? 'text-yellow-400' : 'text-red-400'
-                    }`}>
-                      {item.score}
-                    </div>
-                    <div className="text-xs text-gray-500">{item.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Camera Feed */}
+          <CameraFeed 
+            onFrame={handleFrame} 
+            isAnalyzing={isAnalyzing}
+          />
 
           {/* Analysis Feedback */}
-          {analysisFeedback.length > 0 && (
-            <div className="glass-card rounded-xl p-4">
-              <h4 className="text-xs font-semibold text-boxing-red mb-2 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                Coach Observations
-              </h4>
-              <ul className="space-y-1">
-                {analysisFeedback.slice(0, 3).map((feedback, idx) => (
-                  <li key={idx} className="text-xs text-white/80 flex items-start gap-2">
-                    <span className="text-boxing-red">•</span>
-                    {feedback}
-                  </li>
-                ))}
-              </ul>
+          {analysisFeedback && (
+            <div className="glass-card rounded-xl p-4 border-l-4 border-boxing-red">
+              <h4 className="text-sm font-semibold text-boxing-red mb-1">Coach Observation:</h4>
+              <p className="text-sm text-white/80">{analysisFeedback}</p>
             </div>
           )}
         </div>
 
-        {/* Right Column - Controls */}
+        {/* Right Column - Controls & Info */}
         <div className="flex flex-col">
           {/* Coach Message */}
-          <div className="glass-card rounded-xl p-4 mb-4">
-            <p className="text-base lg:text-lg text-white/90 italic">"{coachMessage}"</p>
+          <div className="glass-card rounded-xl p-4 mb-4 text-center">
+            <p className="text-lg text-white/90 italic">"{coachMessage}"</p>
           </div>
 
-          {/* Voice Wave */}
+          {/* Voice Interaction */}
+          <div className="glass-card rounded-xl p-4 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-sm font-semibold">Voice Check-in</h3>
+                <p className="text-xs text-gray-400">Record a quick note for feedback</p>
+              </div>
+              <button
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isProcessingVoice}
+                className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                  isRecording ? 'bg-boxing-red' : 'bg-dark-card border border-white/20'
+                }`}
+              >
+                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            </div>
+            {recordingError && (
+              <p className="text-xs text-red-400 mb-2">{recordingError}</p>
+            )}
+            {lastTranscript && (
+              <div className="text-xs text-gray-300 mb-2">
+                <span className="text-gray-500">Transcript:</span> {lastTranscript}
+              </div>
+            )}
+            {lastCoachReply && (
+              <div className="text-xs text-white/80">
+                <span className="text-gray-500">Coach:</span> {lastCoachReply}
+              </div>
+            )}
+          </div>
+
+          {/* Voice Visualization */}
           <div className="flex justify-center mb-4">
             <VoiceWave isActive={isSpeaking} />
           </div>
@@ -279,7 +421,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
             </div>
           )}
 
-          {/* Drill Card */}
+          {/* Current Drill */}
           <div className="mb-4">
             <DrillCard 
               drill={currentDrill} 
@@ -291,7 +433,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
           {/* Instructions */}
           {isActive && (
             <div className="glass-card rounded-xl p-4 mb-4 flex-1">
-              <h4 className="text-sm font-semibold text-gray-400 mb-2">Focus Points:</h4>
+              <h4 className="text-sm font-semibold text-gray-400 mb-2">Coach Tips:</h4>
               <ul className="space-y-2">
                 {currentDrill.instructions.map((tip, idx) => (
                   <li key={idx} className="text-sm text-white/80 flex items-start gap-2">
@@ -318,14 +460,15 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
                 <button
                   onClick={() => setIsPaused(!isPaused)}
                   className="w-14 h-14 rounded-full bg-dark-card border border-white/20
-                             hover:border-boxing-red flex items-center justify-center"
+                             hover:border-boxing-red flex items-center justify-center transition-colors"
                 >
                   {isPaused ? <Play className="w-5 h-5 ml-0.5" /> : <MicOff className="w-5 h-5" />}
                 </button>
                 
                 <button
                   onClick={endSession}
-                  className="w-16 h-16 rounded-full bg-boxing-red hover:bg-red-600 flex items-center justify-center"
+                  className="w-16 h-16 rounded-full bg-boxing-red hover:bg-red-600
+                             flex items-center justify-center transition-colors"
                 >
                   <Square className="w-6 h-6" fill="white" />
                 </button>
@@ -333,7 +476,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
                 <button
                   onClick={skipDrill}
                   className="w-14 h-14 rounded-full bg-dark-card border border-white/20
-                             hover:border-boxing-red flex items-center justify-center"
+                             hover:border-boxing-red flex items-center justify-center transition-colors"
+                  title="Skip to next drill"
                 >
                   <SkipForward className="w-5 h-5" />
                 </button>
@@ -341,10 +485,10 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
             )}
           </div>
 
-          {/* Progress */}
+          {/* Progress dots */}
           {isActive && (
             <div className="flex justify-center gap-2 mt-4">
-              {drills.map((_, index) => (
+              {BOXING_DRILLS.map((_, index) => (
                 <div
                   key={index}
                   className={`w-2 h-2 rounded-full transition-colors ${
@@ -358,9 +502,10 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey, userProfile, onS
         </div>
       </div>
 
-      <footer className="mt-4 pt-4 text-center border-t border-white/10">
+      {/* Footer info */}
+      <footer className="mt-6 pt-4 text-center border-t border-white/10">
         <p className="text-xs text-gray-600">
-          Mistral Vision • ElevenLabs Voice • Professional Boxing Coach
+          Vision analysis powered by Mistral AI • Voice by ElevenLabs
         </p>
       </footer>
     </div>
