@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
 import './globals.css'
+
+const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Box AI Tutor',
@@ -13,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="bg-dark-bg text-white min-h-screen">
+      <body className={`${inter.className} min-h-screen`}>
         {children}
       </body>
     </html>

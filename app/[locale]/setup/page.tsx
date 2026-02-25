@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
-import { saveKeys } from '../../lib/storage';
+import { loadKeys, saveKeys } from '../../lib/storage';
 
 async function testKey(url: string, key: string) {
   const r = await fetch(url, {
@@ -28,6 +28,14 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
   const [showElevenLabs, setShowElevenLabs] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  useEffect(() => {
+    const existing = loadKeys();
+    if (existing) {
+      setMistralKey(existing.mistralKey);
+      setElevenLabsKey(existing.elevenLabsKey);
+    }
+  }, []);
 
   const canSubmit = mistralKey.trim().length > 0 && elevenLabsKey.trim().length > 0;
 
@@ -56,25 +64,25 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
 
   return (
     <div className="max-w-xl">
-      <h1 className="text-3xl font-bold mb-2">{messages.setup.title}</h1>
-      <p className="text-gray-300 mb-8">{messages.setup.subtitle}</p>
+      <h1 className="text-3xl font-semibold tracking-tight mb-2">{messages.setup.title}</h1>
+      <p className="text-[color:var(--muted)] mb-8 leading-relaxed">{messages.setup.subtitle}</p>
 
       <form onSubmit={onSave} className="space-y-5">
         <div className="glass-card rounded-xl p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-200">{messages.setup.mistralLabel}</label>
+            <label className="block text-sm font-medium mb-2 text-[color:var(--muted)]">{messages.setup.mistralLabel}</label>
             <div className="relative">
               <input
                 type={showMistral ? 'text' : 'password'}
                 value={mistralKey}
                 onChange={(e) => setMistralKey(e.target.value)}
                 placeholder={messages.setup.mistralHint}
-                className="w-full px-4 py-3 pr-12 rounded-lg bg-dark-card border border-white/10 focus:border-boxing-red focus:outline-none transition-colors text-white placeholder-gray-500"
+                className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] focus:border-boxing-red focus:outline-none transition-all text-[color:var(--text)] placeholder:text-[color:var(--muted)]"
               />
               <button
                 type="button"
                 onClick={() => setShowMistral((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors"
               >
                 {showMistral ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -82,19 +90,19 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-200">{messages.setup.elevenLabel}</label>
+            <label className="block text-sm font-medium mb-2 text-[color:var(--muted)]">{messages.setup.elevenLabel}</label>
             <div className="relative">
               <input
                 type={showElevenLabs ? 'text' : 'password'}
                 value={elevenLabsKey}
                 onChange={(e) => setElevenLabsKey(e.target.value)}
                 placeholder={messages.setup.elevenHint}
-                className="w-full px-4 py-3 pr-12 rounded-lg bg-dark-card border border-white/10 focus:border-boxing-red focus:outline-none transition-colors text-white placeholder-gray-500"
+                className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] focus:border-boxing-red focus:outline-none transition-all text-[color:var(--text)] placeholder:text-[color:var(--muted)]"
               />
               <button
                 type="button"
                 onClick={() => setShowElevenLabs((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors"
               >
                 {showElevenLabs ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -103,11 +111,11 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
 
           {status && (
             <div
-              className={
+              className={`rounded-lg border px-4 py-3 text-sm font-medium flex items-start gap-2 transition-all ${
                 status.type === 'ok'
-                  ? 'text-sm text-green-300'
-                  : 'text-sm text-red-300'
-              }
+                  ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
+                  : 'border-red-400/40 bg-red-500/10 text-red-200'
+              }`}
             >
               {status.text}
             </div>
@@ -118,7 +126,7 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
               type="button"
               onClick={onTest}
               disabled={busy || !canSubmit}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {busy ? messages.setup.testing : messages.setup.testKeys}
             </button>
@@ -126,14 +134,14 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
             <button
               type="submit"
               disabled={busy || !canSubmit}
-              className="px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {messages.setup.saveAndContinue}
             </button>
           </div>
 
-          <p className="text-xs text-gray-500">
-            Keys are stored in <code className="text-gray-300">sessionStorage</code> only. This app does not persist keys server-side.
+          <p className="text-xs text-[color:var(--muted)]">
+            Keys are stored in <code className="text-[color:var(--text)]">localStorage</code> on this device only. This app does not persist keys server-side.
           </p>
         </div>
       </form>

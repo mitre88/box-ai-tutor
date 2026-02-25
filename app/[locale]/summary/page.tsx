@@ -20,25 +20,25 @@ export default function SummaryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">{messages.summary.title}</h1>
-        <p className="text-gray-300">{messages.summary.subtitle}</p>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">{messages.summary.title}</h1>
+        <p className="text-[color:var(--muted)]">{messages.summary.subtitle}</p>
       </div>
 
       <div className="glass-card rounded-xl p-5 space-y-3">
-        <div className="text-sm text-gray-400">Duration</div>
+        <div className="text-sm text-[color:var(--muted)]">Duration</div>
         <div className="text-xl font-semibold">
           {seconds === null ? '—' : `${Math.floor(seconds / 60)}m ${seconds % 60}s`}
         </div>
 
-        <div className="text-sm text-gray-400">Notes</div>
-        <pre className="whitespace-pre-wrap text-sm text-gray-200 bg-black/20 p-3 rounded-lg border border-white/10">
+        <div className="text-sm text-[color:var(--muted)]">Notes</div>
+        <pre className="whitespace-pre-wrap text-sm text-[color:var(--text)] bg-black/10 p-3 rounded-lg border border-[color:var(--border)]">
           {summary || '—'}
         </pre>
       </div>
 
       <Link
         href={`/${locale}/setup`}
-        className="inline-block px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5"
+        className="inline-block px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
       >
         {messages.summary.backToSetup}
       </Link>

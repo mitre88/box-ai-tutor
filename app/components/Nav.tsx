@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import type { Locale } from '../i18n/messages';
 import { locales } from '../i18n/messages';
 import { useI18n } from '../i18n/I18nProvider';
@@ -13,6 +15,27 @@ function cx(...classes: Array<string | false | undefined | null>) {
 export default function Nav({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   const { messages } = useI18n();
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    const next = saved || preferred;
+    setTheme(next);
+    document.documentElement.dataset.theme = next;
+    document.documentElement.style.colorScheme = next;
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', next);
+      document.documentElement.dataset.theme = next;
+      document.documentElement.style.colorScheme = next;
+    }
+  };
 
   const base = `/${locale}`;
   const items = [
@@ -23,7 +46,7 @@ export default function Nav({ locale }: { locale: Locale }) {
   ];
 
   return (
-    <header className="sticky top-0 z-10 backdrop-blur border-b border-white/10 bg-black/20">
+    <header className="sticky top-0 z-10 backdrop-blur border-b border-[color:var(--border)] bg-black/10">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
         <Link href={`${base}`} className="font-semibold tracking-wide">
           {messages.appName}
@@ -37,10 +60,10 @@ export default function Nav({ locale }: { locale: Locale }) {
                 key={it.href}
                 href={it.href}
                 className={cx(
-                  'text-sm px-3 py-1.5 rounded-lg border transition-colors',
+                  'text-sm px-3 py-1.5 rounded-lg border transition-all',
                   active
-                    ? 'border-boxing-red bg-boxing-red/15'
-                    : 'border-white/10 hover:border-white/20 hover:bg-white/5'
+                    ? 'border-boxing-red bg-boxing-red/15 text-[color:var(--text)]'
+                    : 'border-[color:var(--border)] hover:border-boxing-red/40 hover:bg-black/5'
                 )}
               >
                 {it.label}
@@ -48,7 +71,16 @@ export default function Nav({ locale }: { locale: Locale }) {
             );
           })}
 
-          <div className="ml-2 flex items-center gap-1 border border-white/10 rounded-lg p-1">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="ml-2 inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <div className="flex items-center gap-1 border border-[color:var(--border)] rounded-lg p-1">
             {locales.map((l) => {
               const next = pathname ? pathname.replace(/^\/(en|es|fr)/, `/${l}`) : `/${l}`;
               return (
@@ -57,7 +89,7 @@ export default function Nav({ locale }: { locale: Locale }) {
                   href={next}
                   className={cx(
                     'text-xs px-2 py-1 rounded-md',
-                    l === locale ? 'bg-white/10' : 'hover:bg-white/5'
+                    l === locale ? 'bg-black/10' : 'hover:bg-black/5'
                   )}
                   aria-label={`Switch language to ${l}`}
                 >

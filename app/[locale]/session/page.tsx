@@ -50,16 +50,16 @@ export default function SessionPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">{messages.session.title}</h1>
-        <p className="text-gray-300">{messages.session.subtitle}</p>
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">{messages.session.title}</h1>
+        <p className="text-[color:var(--muted)]">{messages.session.subtitle}</p>
       </div>
 
       {hasKeys === false && (
-        <div className="glass-card rounded-xl p-5">
-          <p className="text-red-200 mb-3">{messages.common.missingKeys}</p>
+        <div className="rounded-xl border border-red-400/40 bg-red-500/10 p-5 space-y-3 transition-all">
+          <p className="text-red-200 text-sm font-medium">{messages.common.missingKeys}</p>
           <Link
             href={`/${locale}/setup`}
-            className="inline-block px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold"
+            className="inline-block px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold transition-all"
           >
             {messages.nav.setup}
           </Link>
@@ -72,14 +72,14 @@ export default function SessionPage() {
           {!running ? (
             <button
               onClick={() => setRunning(true)}
-              className="px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold"
+              className="px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold transition-all"
             >
               {messages.session.start}
             </button>
           ) : (
             <button
               onClick={stop}
-              className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5"
+              className="px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
             >
               {messages.session.stop}
             </button>
@@ -87,7 +87,7 @@ export default function SessionPage() {
 
           <button
             onClick={endAndSummary}
-            className="px-4 py-2 rounded-lg border border-white/10 hover:bg-white/5"
+            className="px-4 py-2 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
           >
             {messages.session.endAndSummary}
           </button>
