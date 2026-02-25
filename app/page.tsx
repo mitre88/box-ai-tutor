@@ -4,32 +4,32 @@ import { useState } from 'react';
 import ApiKeyInput from './components/ApiKeyInput';
 import VoiceCoach from './components/VoiceCoach';
 
-export default function Home() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
+interface ApiKeys {
+  mistralKey: string;
+  elevenLabsKey: string;
+}
 
-  const handleApiKeySubmit = (key: string) => {
-    setApiKey(key);
+export default function Home() {
+  const [apiKeys, setApiKeys] = useState<ApiKeys | null>(null);
+
+  const handleApiKeySubmit = (keys: ApiKeys) => {
+    setApiKeys(keys);
     // Store in session storage for persistence
     if (typeof window !== 'undefined') {
-      sessionStorage.setItem('mistralApiKey', key);
+      sessionStorage.setItem('mistralApiKey', keys.mistralKey);
+      sessionStorage.setItem('elevenLabsApiKey', keys.elevenLabsKey);
     }
   };
 
-  // Check for existing key on mount
-  if (typeof window !== 'undefined' && !apiKey) {
-    const stored = sessionStorage.getItem('mistralApiKey');
-    if (stored) {
-      setApiKey(stored);
-      return null; // Will re-render with key
-    }
-  }
-
   return (
     <main>
-      {!apiKey ? (
+      {!apiKeys ? (
         <ApiKeyInput onSubmit={handleApiKeySubmit} />
       ) : (
-        <VoiceCoach apiKey={apiKey} />
+        <VoiceCoach 
+          mistralKey={apiKeys.mistralKey} 
+          elevenLabsKey={apiKeys.elevenLabsKey}
+        />
       )}
     </main>
   );

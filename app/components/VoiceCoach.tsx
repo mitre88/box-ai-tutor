@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Mic, MicOff, Play, Square, SkipForward } from 'lucide-react';
+import { Mic, MicOff, Play, Square, SkipForward, RotateCcw } from 'lucide-react';
 import SessionTimer from './SessionTimer';
 import DrillCard from './DrillCard';
 import VoiceWave from './VoiceWave';
 
 interface VoiceCoachProps {
-  apiKey: string;
+  mistralKey: string;
+  elevenLabsKey: string;
 }
 
 interface Drill {
@@ -16,25 +17,70 @@ interface Drill {
   description: string;
   duration: number;
   type: 'warmup' | 'technique' | 'combo' | 'cooldown';
+  instructions: string[];
 }
 
-const SAMPLE_DRILLS: Drill[] = [
-  { id: 1, name: 'Shadow Boxing', description: 'Freestyle movement, focus on form', duration: 180, type: 'warmup' },
-  { id: 2, name: 'Jab-Cross Combos', description: 'Basic 1-2 combinations', duration: 120, type: 'technique' },
-  { id: 3, name: 'Speed Drill', description: 'Maximum punch output', duration: 60, type: 'combo' },
-  { id: 4, name: 'Defense & Slips', description: 'Head movement practice', duration: 120, type: 'technique' },
-  { id: 5, name: 'Cool Down', description: 'Stretching and breathing', duration: 120, type: 'cooldown' },
+const BOXING_DRILLS: Drill[] = [
+  { 
+    id: 1, 
+    name: 'Stance & Movement', 
+    description: 'Find your balance, light on your feet', 
+    duration: 120, 
+    type: 'warmup',
+    instructions: ['Hands up, chin down', 'Bounce lightly', 'Stay on balls of feet']
+  },
+  { 
+    id: 2, 
+    name: 'Jab-Cross Fundamentals', 
+    description: 'Perfect your 1-2 combination', 
+    duration: 180, 
+    type: 'technique',
+    instructions: ['Extend jab fully', 'Rotate hips on cross', 'Return to guard quickly']
+  },
+  { 
+    id: 3, 
+    name: 'Speed Round', 
+    description: 'Maximum output, maintain form', 
+    duration: 60, 
+    type: 'combo',
+    instructions: ['Fast hands', 'Don\'t sacrifice technique', 'Breathe with each punch']
+  },
+  { 
+    id: 4, 
+    name: 'Defense Master', 
+    description: 'Slips, rolls, and counters', 
+    duration: 150, 
+    type: 'technique',
+    instructions: ['Slip left, slip right', 'Roll under imaginary punches', 'Counter after defense']
+  },
+  { 
+    id: 5, 
+    name: 'Hooks & Uppercuts', 
+    description: 'Power shots from close range', 
+    duration: 180, 
+    type: 'combo',
+    instructions: ['Keep elbow up on hooks', 'Drive from legs on uppercuts', 'Stay balanced']
+  },
+  { 
+    id: 6, 
+    name: 'Cool Down', 
+    description: 'Breathing and stretching', 
+    duration: 120, 
+    type: 'cooldown',
+    instructions: ['Deep breaths', 'Shake out arms', 'Reflect on session']
+  },
 ];
 
-export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
+export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(SAMPLE_DRILLS[0].duration);
+  const [timeRemaining, setTimeRemaining] = useState(BOXING_DRILLS[0].duration);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
+  const [coachMessage, setCoachMessage] = useState('Ready to train? Press start when you are.');
 
-  const currentDrill = SAMPLE_DRILLS[currentDrillIndex];
+  const currentDrill = BOXING_DRILLS[currentDrillIndex];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -51,28 +97,36 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
   }, [isActive, isPaused, timeRemaining]);
 
   const handleDrillComplete = () => {
-    if (currentDrillIndex < SAMPLE_DRILLS.length - 1) {
-      setCurrentDrillIndex((prev) => prev + 1);
-      setTimeRemaining(SAMPLE_DRILLS[currentDrillIndex + 1].duration);
-      // Trigger voice announcement for next drill
-      announceNextDrill(SAMPLE_DRILLS[currentDrillIndex + 1]);
+    if (currentDrillIndex < BOXING_DRILLS.length - 1) {
+      const nextIndex = currentDrillIndex + 1;
+      setCurrentDrillIndex(nextIndex);
+      setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
+      announceDrill(BOXING_DRILLS[nextIndex], true);
     } else {
       setSessionComplete(true);
       setIsActive(false);
+      setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
     }
   };
 
-  const announceNextDrill = (drill: Drill) => {
+  const announceDrill = (drill: Drill, autoPlay: boolean = false) => {
     setIsSpeaking(true);
-    // TODO: Integrate with ElevenLabs API
+    setCoachMessage(`${drill.name}. ${drill.description}. Ready? Let's go!`);
+    
+    // TODO: Integrate ElevenLabs TTS here
+    // Use elevenLabsKey for API call
+    
     setTimeout(() => setIsSpeaking(false), 3000);
   };
 
   const startSession = () => {
     setIsActive(true);
     setIsSpeaking(true);
-    // Initial greeting
-    setTimeout(() => setIsSpeaking(false), 2000);
+    setCoachMessage(`Welcome to Fight Corner. Let's start with ${currentDrill.name}. Get in your stance.`);
+    
+    // TODO: ElevenLabs welcome message
+    
+    setTimeout(() => setIsSpeaking(false), 4000);
   };
 
   const skipDrill = () => {
@@ -82,21 +136,34 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
   const endSession = () => {
     setIsActive(false);
     setSessionComplete(true);
+    setCoachMessage('Session ended early. Great effort! Come back stronger next time.');
+  };
+
+  const resetSession = () => {
+    setSessionComplete(false);
+    setIsActive(false);
+    setCurrentDrillIndex(0);
+    setTimeRemaining(BOXING_DRILLS[0].duration);
+    setCoachMessage('Ready to train? Press start when you are.');
   };
 
   if (sessionComplete) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="glass-card rounded-2xl p-8 max-w-md w-full text-center">
+          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+            <span className="text-4xl">🥊</span>
+          </div>
           <h2 className="text-3xl font-bold mb-4 gradient-text">Session Complete!</h2>
           <p className="text-gray-400 mb-6">
-            Great work! You completed {SAMPLE_DRILLS.length} drills.
+            You crushed {BOXING_DRILLS.length} rounds. The champion's path is built one session at a time.
           </p>
           <div className="space-y-3">
             <button
-              onClick={() => window.location.reload()}
-              className="w-full py-3 bg-boxing-red hover:bg-red-600 rounded-lg font-semibold"
+              onClick={resetSession}
+              className="w-full py-3 bg-boxing-red hover:bg-red-600 rounded-lg font-semibold flex items-center justify-center gap-2"
             >
+              <RotateCcw className="w-4 h-4" />
               Start New Session
             </button>
           </div>
@@ -108,33 +175,43 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
   return (
     <div className="min-h-screen p-6 flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold">Fight Corner Coach</h1>
+      <header className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-bold">Fight Corner Coach</h1>
+          <p className="text-xs text-gray-400">Professional AI Boxing Coach</p>
+        </div>
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-500'}`} />
-          <span className="text-sm text-gray-400">
-            {isActive ? 'Active' : 'Ready'}
+          <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
+          <span className="text-xs text-gray-400">
+            {isActive ? 'Coach Active' : 'Standby'}
           </span>
         </div>
       </header>
+
+      {/* Coach Message Display */}
+      <div className="mb-6">
+        <div className="glass-card rounded-xl p-4 text-center">
+          <p className="text-lg text-white/90 italic">"{coachMessage}"</p>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center max-w-lg mx-auto w-full">
         
         {/* Voice Visualization */}
-        <div className="mb-8">
+        <div className="mb-6">
           <VoiceWave isActive={isSpeaking} />
         </div>
 
         {/* Timer */}
         {isActive && (
-          <div className="mb-8">
+          <div className="mb-6">
             <SessionTimer seconds={timeRemaining} />
           </div>
         )}
 
         {/* Current Drill */}
-        <div className="w-full mb-8">
+        <div className="w-full mb-6">
           <DrillCard 
             drill={currentDrill} 
             isActive={isActive}
@@ -142,13 +219,30 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
           />
         </div>
 
+        {/* Instructions */}
+        {isActive && (
+          <div className="w-full mb-6">
+            <div className="glass-card rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-gray-400 mb-2">Coach Tips:</h4>
+              <ul className="space-y-1">
+                {currentDrill.instructions.map((tip, idx) => (
+                  <li key={idx} className="text-sm text-white/80 flex items-start gap-2">
+                    <span className="text-boxing-red">•</span>
+                    {tip}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Controls */}
         <div className="flex items-center gap-4">
           {!isActive ? (
             <button
               onClick={startSession}
               className="w-20 h-20 rounded-full bg-boxing-red hover:bg-red-600 neon-glow
-                         flex items-center justify-center transition-transform hover:scale-105"
+                         flex items-center justify-center transition-transform hover:scale-105 pulse-ring"
             >
               <Play className="w-8 h-8 ml-1" fill="white" />
             </button>
@@ -156,26 +250,27 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
             <>
               <button
                 onClick={() => setIsPaused(!isPaused)}
-                className="w-16 h-16 rounded-full bg-dark-card border border-white/20
-                           hover:border-boxing-red flex items-center justify-center"
+                className="w-14 h-14 rounded-full bg-dark-card border border-white/20
+                           hover:border-boxing-red flex items-center justify-center transition-colors"
               >
-                {isPaused ? <Play className="w-6 h-6 ml-1" /> : <MicOff className="w-6 h-6" />}
+                {isPaused ? <Play className="w-5 h-5 ml-0.5" /> : <MicOff className="w-5 h-5" />}
               </button>
               
               <button
                 onClick={endSession}
-                className="w-20 h-20 rounded-full bg-boxing-red hover:bg-red-600
-                           flex items-center justify-center"
+                className="w-16 h-16 rounded-full bg-boxing-red hover:bg-red-600
+                           flex items-center justify-center transition-colors"
               >
-                <Square className="w-8 h-8" fill="white" />
+                <Square className="w-6 h-6" fill="white" />
               </button>
 
               <button
                 onClick={skipDrill}
-                className="w-16 h-16 rounded-full bg-dark-card border border-white/20
-                           hover:border-boxing-red flex items-center justify-center"
+                className="w-14 h-14 rounded-full bg-dark-card border border-white/20
+                           hover:border-boxing-red flex items-center justify-center transition-colors"
+                title="Skip to next drill"
               >
-                <SkipForward className="w-6 h-6" />
+                <SkipForward className="w-5 h-5" />
               </button>
             </>
           )}
@@ -183,8 +278,8 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
 
         {/* Progress dots */}
         {isActive && (
-          <div className="flex gap-2 mt-8">
-            {SAMPLE_DRILLS.map((_, index) => (
+          <div className="flex gap-2 mt-6">
+            {BOXING_DRILLS.map((_, index) => (
               <div
                 key={index}
                 className={`w-2 h-2 rounded-full transition-colors ${
@@ -196,6 +291,13 @@ export default function VoiceCoach({ apiKey }: VoiceCoachProps) {
           </div>
         )}
       </div>
+
+      {/* Footer info */}
+      <footer className="mt-auto pt-4 text-center">
+        <p className="text-xs text-gray-600">
+          Voice coach powered by ElevenLabs • Analysis by Mistral AI
+        </p>
+      </footer>
     </div>
   );
 }
