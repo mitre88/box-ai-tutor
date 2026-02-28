@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+const TEST_VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
+
 export async function POST(req: Request) {
   try {
     const { key } = (await req.json()) as { key?: string };
@@ -8,10 +10,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    const r = await fetch('https://api.elevenlabs.io/v1/models', {
+    // Validate by making a minimal TTS request (the only permission the key needs)
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${TEST_VOICE_ID}`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'xi-api-key': key,
       },
+      body: JSON.stringify({
+        text: 'ok',
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: { stability: 0.5, similarity_boost: 0.5 },
+      }),
       cache: 'no-store',
     });
 
