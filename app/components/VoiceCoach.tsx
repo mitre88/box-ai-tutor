@@ -122,12 +122,14 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   const [lastTranscript, setLastTranscript] = useState<string | null>(null);
   const [lastCoachReply, setLastCoachReply] = useState<string | null>(null);
   const [recordingError, setRecordingError] = useState<string | null>(null);
+  const [ttsEngine, setTtsEngine] = useState<'elevenlabs' | 'native'>('elevenlabs');
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const autoListenTimeoutRef = useRef<number | null>(null);
   const bellContextRef = useRef<AudioContext | null>(null);
+  const elevenLabsFailedRef = useRef(false);
 
   const currentDrill = BOXING_DRILLS[currentDrillIndex];
 
@@ -178,9 +180,38 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
     }, 900);
   }, [isActive, isPaused]);
 
+  const speakNative = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      if (typeof window === 'undefined' || !window.speechSynthesis) {
+        resolve();
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 0.9;
+      // Prefer an English voice with a natural sound
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha'))
+        || voices.find(v => v.lang.startsWith('en') && v.localService)
+        || voices.find(v => v.lang.startsWith('en'));
+      if (preferred) utterance.voice = preferred;
+      utterance.onend = () => resolve();
+      utterance.onerror = () => resolve();
+      window.speechSynthesis.speak(utterance);
+    });
+  }, []);
+
   const speakText = useCallback(async (text: string) => {
     if (!text.trim()) return;
     setIsSpeaking(true);
+
+    // If ElevenLabs already failed, go straight to native TTS
+    if (elevenLabsFailedRef.current) {
+      await speakNative(text);
+      setIsSpeaking(false);
+      return;
+    }
 
     try {
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
@@ -201,7 +232,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
       });
 
       if (!response.ok) {
-        throw new Error('ElevenLabs request failed');
+        throw new Error(`ElevenLabs ${response.status}`);
       }
 
       const audioBlob = await response.blob();
@@ -215,11 +246,14 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         URL.revokeObjectURL(audioUrl);
         setIsSpeaking(false);
       };
-    } catch (error) {
-      console.error(error);
+    } catch {
+      // ElevenLabs failed — switch to native TTS permanently
+      elevenLabsFailedRef.current = true;
+      setTtsEngine('native');
+      await speakNative(text);
       setIsSpeaking(false);
     }
-  }, [elevenLabsKey]);
+  }, [elevenLabsKey, speakNative]);
 
   const fetchCoachReply = useCallback(async (prompt: string) => {
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
@@ -481,9 +515,11 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
             <span className="text-xs text-gray-300">{isActive ? 'Coach Active' : 'Standby'}</span>
           </div>
-          <div className="flex items-center gap-2 bg-dark-card/70 border border-white/10 px-3 py-1 rounded-full">
-            <AudioLines className="w-3 h-3 text-boxing-red" />
-            <span className="text-xs text-gray-300">Voice {voiceStatus}</span>
+          <div className={`flex items-center gap-2 bg-dark-card/70 border px-3 py-1 rounded-full ${ttsEngine === 'native' ? 'border-amber-400/40' : 'border-white/10'}`}>
+            <AudioLines className={`w-3 h-3 ${ttsEngine === 'native' ? 'text-amber-400' : 'text-boxing-red'}`} />
+            <span className="text-xs text-gray-300">
+              {ttsEngine === 'native' ? 'Voice (Browser)' : 'Voice'} {voiceStatus}
+            </span>
           </div>
         </div>
       </header>
