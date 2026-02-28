@@ -7,16 +7,17 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { loadKeys, saveKeys, loadDifficulty, saveDifficulty } from '../../lib/storage';
 import type { Difficulty } from '../../lib/storage';
 
-async function testKey(url: string, key: string) {
+async function testKey(url: string, key: string): Promise<{ format: string }> {
   const r = await fetch(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ key }),
   });
+  const data = await r.json().catch(() => ({}));
   if (!r.ok) {
-    const data = await r.json().catch(() => ({}));
     throw new Error(data?.error || `Request failed (${r.status})`);
   }
+  return { format: data?.format || 'standard' };
 }
 
 export default function SetupPage({ params }: { params: { locale: string } }) {
@@ -43,8 +44,11 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
     setBusy(true);
     setStatus(null);
     try {
-      await testKey('/api/mistral/test', mistralKey.trim());
-      setStatus({ type: 'ok', text: messages.setup.success });
+      const result = await testKey('/api/mistral/test', mistralKey.trim());
+      const formatLabel = result.format === 'hackathon'
+        ? (locale === 'es' ? 'Clave de hackathon detectada (UUID).' : locale === 'fr' ? 'Clé hackathon détectée (UUID).' : 'Hackathon key detected (UUID).')
+        : messages.setup.success;
+      setStatus({ type: 'ok', text: formatLabel });
     } catch (e: any) {
       setStatus({ type: 'err', text: e?.message || messages.setup.error });
     } finally {
@@ -85,6 +89,11 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
                 {showMistral ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
+            <p className="text-xs text-[color:var(--muted)] mt-1.5">
+              {locale === 'es' ? 'Acepta API key estándar o clave UUID del hackathon.' :
+               locale === 'fr' ? 'Accepte une clé API standard ou une clé UUID du hackathon.' :
+               'Accepts standard API key or hackathon UUID key.'}
+            </p>
           </div>
 
           {/* ElevenLabs pre-configured indicator */}

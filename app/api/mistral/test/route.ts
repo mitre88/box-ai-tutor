@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 
+// Hackathon keys are UUIDs: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+const UUID_RE = /^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$/;
+
 export async function POST(req: Request) {
   try {
     const { key } = (await req.json()) as { key?: string };
@@ -8,14 +11,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    // Validate by making a minimal chat completion request.
-    // Using /v1/chat/completions because some hackathon keys
-    // do not have access to /v1/models.
+    const trimmed = key.trim();
+
+    // Hackathon UUID key — accept without API validation
+    if (UUID_RE.test(trimmed)) {
+      return NextResponse.json({ ok: true, format: 'hackathon' });
+    }
+
+    // Standard Mistral API key — validate via chat completions
     const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
+        Authorization: `Bearer ${trimmed}`,
       },
       body: JSON.stringify({
         model: 'mistral-small-latest',
@@ -33,7 +41,7 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, format: 'standard' });
   } catch {
     return NextResponse.json({ ok: false, error: 'Bad request' }, { status: 400 });
   }
