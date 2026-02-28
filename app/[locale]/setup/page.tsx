@@ -97,9 +97,9 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
           </div>
 
           {/* ElevenLabs pre-configured indicator */}
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30">
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg border" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)' }}>
             <CheckCircle className="w-4 h-4 shrink-0" style={{ color: 'var(--success-icon)' }} />
-            <span className="text-sm" style={{ color: 'var(--success-text)' }}>{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--success-text)' }}>{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
           </div>
 
           {/* Difficulty selector */}
