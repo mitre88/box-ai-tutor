@@ -9,7 +9,7 @@ Voice-first boxing coach web app (hackathon build). Uses **camera preview** in t
 
 ## What’s included (current)
 - **Key setup** page (Mistral + ElevenLabs)
-  - Keys stored in the browser via `sessionStorage`
+  - Keys stored in the browser via `localStorage`
   - Optional defaults via `.env` for convenience
 - **Camera preview** (`getUserMedia`) for laptop/desktop/mobile
 - **Session** page (start/stop timer) + live camera component hook
