@@ -8,12 +8,20 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    // Network validation: attempt to fetch models.
-    const r = await fetch('https://api.mistral.ai/v1/models', {
+    // Validate by making a minimal chat completion request.
+    // Using /v1/chat/completions because some hackathon keys
+    // do not have access to /v1/models.
+    const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${key}`,
       },
-      // Avoid Next.js caching user-provided secrets
+      body: JSON.stringify({
+        model: 'mistral-small-latest',
+        messages: [{ role: 'user', content: 'hi' }],
+        max_tokens: 1,
+      }),
       cache: 'no-store',
     });
 

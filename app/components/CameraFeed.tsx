@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { Camera, CameraOff, RefreshCw } from 'lucide-react';
 
 interface CameraProps {
@@ -13,11 +13,21 @@ interface CameraProps {
 export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedbackTone = 'neutral' }: CameraProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [isActive, setIsActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
 
-  const startCamera = async () => {
+  const attachStream = useCallback((stream: MediaStream) => {
+    streamRef.current = stream;
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+    }
+    setIsActive(true);
+    setError(null);
+  }, []);
+
+  const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -27,26 +37,23 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
         },
         audio: false
       });
-
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        setIsActive(true);
-        setError(null);
-      }
-    } catch (err) {
+      attachStream(stream);
+    } catch {
       setError('Camera access denied. Please allow camera permissions.');
       setIsActive(false);
     }
-  };
+  }, [facingMode, attachStream]);
 
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-      setIsActive(false);
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-  };
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsActive(false);
+  }, []);
 
   const toggleCamera = () => {
     if (isActive) {
@@ -59,8 +66,34 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
   const switchCamera = () => {
     stopCamera();
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-    setTimeout(startCamera, 100);
   };
+
+  // Re-start camera when facingMode changes (after a switch)
+  useEffect(() => {
+    // Only re-start if we were previously active (i.e. user triggered a switch)
+    if (streamRef.current === null && !isActive && error === null) return;
+    if (!isActive && error === null) {
+      startCamera();
+    }
+  }, [facingMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ensure stream is attached to video element after render
+  useEffect(() => {
+    if (isActive && videoRef.current && streamRef.current) {
+      if (videoRef.current.srcObject !== streamRef.current) {
+        videoRef.current.srcObject = streamRef.current;
+      }
+    }
+  }, [isActive]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // Frame capture for AI analysis
   useEffect(() => {
@@ -70,14 +103,23 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
       if (videoRef.current && videoRef.current.readyState === 4) {
         onFrame(videoRef.current);
       }
-    }, 1000); // Capture 1 frame per second for analysis
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [isActive, onFrame]);
 
   return (
     <div className="relative w-full aspect-video rounded-xl overflow-hidden glass-card">
-      {!isActive ? (
+      {/* Video element is always in the DOM so the ref is available */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`w-full h-full object-cover ${isActive ? 'block' : 'hidden'}`}
+      />
+
+      {!isActive && (
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <div className="w-16 h-16 rounded-full bg-dark-card border border-white/10 flex items-center justify-center mb-4">
             <CameraOff className="w-8 h-8 text-gray-400" />
@@ -93,16 +135,10 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
             Enable Camera
           </button>
         </div>
-      ) : (
+      )}
+
+      {isActive && (
         <>
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          
           {/* Analysis overlay */}
           {isAnalyzing && (
             <div className="absolute top-4 right-4 flex items-center gap-2 bg-black/60 px-3 py-1.5 rounded-full">
@@ -157,7 +193,7 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
           </div>
         </>
       )}
-      
+
       <canvas ref={canvasRef} className="hidden" />
     </div>
   );
