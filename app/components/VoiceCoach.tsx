@@ -520,7 +520,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <span className="text-4xl">🥊</span>
           </div>
           <h2 className="text-3xl font-bold mb-4 gradient-text">Session Complete!</h2>
-          <p className="text-gray-400 mb-6">
+          <p className="text-[color:var(--muted)] mb-6">
             You crushed {drills.length} rounds. The champion's path is built one session at a time.
           </p>
           <div className="space-y-3">
@@ -543,22 +543,22 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
       <header className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-xl font-bold">Fight Corner Coach</h1>
-          <p className="text-xs text-gray-400">AI Boxing Coach with Vision + Voice</p>
+          <p className="text-xs text-[color:var(--muted)]">AI Boxing Coach with Vision + Voice</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          <div className={`flex items-center gap-2 bg-dark-card/70 border px-3 py-1 rounded-full ${
+          <div className={`flex items-center gap-2 bg-[color:var(--card)] border px-3 py-1 rounded-full ${
             difficulty === 'beginner' ? 'border-emerald-400/40' : difficulty === 'advanced' ? 'border-orange-400/40' : 'border-blue-400/40'
           }`}>
             <span className="text-xs">{difficulty === 'beginner' ? '🥊' : difficulty === 'advanced' ? '🏆' : '🔥'}</span>
-            <span className="text-xs text-gray-300 capitalize">{difficulty}</span>
+            <span className="text-xs text-[color:var(--muted)] capitalize">{difficulty}</span>
           </div>
-          <div className="flex items-center gap-2 bg-dark-card/70 border border-white/10 px-3 py-1 rounded-full">
+          <div className="flex items-center gap-2 bg-[color:var(--card)] border border-[color:var(--border)] px-3 py-1 rounded-full">
             <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
-            <span className="text-xs text-gray-300">{isActive ? 'Coach Active' : 'Standby'}</span>
+            <span className="text-xs text-[color:var(--muted)]">{isActive ? 'Coach Active' : 'Standby'}</span>
           </div>
-          <div className={`flex items-center gap-2 bg-dark-card/70 border px-3 py-1 rounded-full ${ttsEngine === 'native' ? 'border-amber-400/40' : 'border-white/10'}`}>
+          <div className={`flex items-center gap-2 bg-[color:var(--card)] border px-3 py-1 rounded-full ${ttsEngine === 'native' ? 'border-amber-400/40' : 'border-[color:var(--border)]'}`}>
             <AudioLines className={`w-3 h-3 ${ttsEngine === 'native' ? 'text-amber-400' : 'text-boxing-red'}`} />
-            <span className="text-xs text-gray-300">
+            <span className="text-xs text-[color:var(--muted)]">
               {ttsEngine === 'native' ? 'Voice (Browser)' : 'Voice'} {voiceStatus}
             </span>
           </div>
@@ -580,7 +580,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           {analysisFeedback && (
             <div className="glass-card rounded-xl p-4 border-l-4 border-boxing-red">
               <h4 className="text-sm font-semibold text-boxing-red mb-1">Coach Observation:</h4>
-              <p className="text-sm text-white/80">{analysisFeedback}</p>
+              <p className="text-sm text-[color:var(--text)]">{analysisFeedback}</p>
             </div>
           )}
         </div>
@@ -589,7 +589,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         <div className="flex flex-col">
           {/* Coach Message */}
           <div className="glass-card rounded-xl p-4 mb-4 text-center">
-            <p className="text-lg text-white/90 italic">"{coachMessage}"</p>
+            <p className="text-lg text-[color:var(--text)] italic">"{coachMessage}"</p>
           </div>
 
           {/* Coach Style */}
@@ -597,7 +597,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-semibold">Coach Style</h3>
-                <p className="text-xs text-gray-400">Pick the vibe for your prompts</p>
+                <p className="text-xs text-[color:var(--muted)]">Pick the vibe for your prompts</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -606,7 +606,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
                   key={style}
                   onClick={() => setStylePreset(style)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all
-                    ${stylePreset === style ? 'bg-boxing-red border-boxing-red text-white' : 'border-white/15 text-gray-300 hover:border-boxing-red/60'}`}
+                    ${stylePreset === style ? 'bg-boxing-red border-boxing-red text-white' : 'border-[color:var(--border)] text-[color:var(--muted)] hover:border-boxing-red/60'}`}
                 >
                   {STYLE_PRESETS[style].label}
                 </button>
@@ -619,23 +619,23 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <div className="flex items-center justify-between mb-3">
               <div>
                 <h3 className="text-sm font-semibold">Voice Check-in</h3>
-                <p className="text-xs text-gray-400">Record a quick note for feedback</p>
+                <p className="text-xs text-[color:var(--muted)]">Record a quick note for feedback</p>
               </div>
               <button
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isProcessingVoice}
                 className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
-                  isRecording ? 'bg-boxing-red' : 'bg-dark-card border border-white/20'
+                  isRecording ? 'bg-boxing-red' : 'bg-[color:var(--card)] border border-[color:var(--border)]'
                 }`}
               >
                 {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
             </div>
-            <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+            <div className="flex items-center justify-between text-xs text-[color:var(--muted)] mb-2">
               <span>Hands-free auto listen</span>
               <button
                 onClick={() => setAutoListen((v) => !v)}
-                className={`px-3 py-1 rounded-full border transition-all ${autoListen ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/15 text-gray-300'}`}
+                className={`px-3 py-1 rounded-full border transition-all ${autoListen ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-[color:var(--border)] text-[color:var(--muted)]'}`}
                 style={autoListen ? { color: 'var(--success-text)' } : undefined}
               >
                 {autoListen ? 'On' : 'Off'}
@@ -645,13 +645,13 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
               <p className="text-xs text-red-400 mb-2">{recordingError}</p>
             )}
             {lastTranscript && (
-              <div className="text-xs text-gray-300 mb-2">
-                <span className="text-gray-500">Transcript:</span> {lastTranscript}
+              <div className="text-xs text-[color:var(--muted)] mb-2">
+                <span className="text-[color:var(--muted)]">Transcript:</span> {lastTranscript}
               </div>
             )}
             {lastCoachReply && (
-              <div className="text-xs text-white/80">
-                <span className="text-gray-500">Coach:</span> {lastCoachReply}
+              <div className="text-xs text-[color:var(--text)]">
+                <span className="text-[color:var(--muted)]">Coach:</span> {lastCoachReply}
               </div>
             )}
           </div>
@@ -664,7 +664,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           {/* Timer */}
           {isActive && (
             <div className="flex flex-col items-center mb-4 gap-2">
-              <div className="text-xs uppercase tracking-[0.3em] text-gray-500">Round {currentDrillIndex + 1} / {drills.length}</div>
+              <div className="text-xs uppercase tracking-[0.3em] text-[color:var(--muted)]">Round {currentDrillIndex + 1} / {drills.length}</div>
               <SessionTimer seconds={timeRemaining} />
             </div>
           )}
@@ -681,10 +681,10 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           {/* Instructions */}
           {isActive && (
             <div className="glass-card rounded-xl p-4 mb-4 flex-1">
-              <h4 className="text-sm font-semibold text-gray-400 mb-2">Coach Tips:</h4>
+              <h4 className="text-sm font-semibold text-[color:var(--muted)] mb-2">Coach Tips:</h4>
               <ul className="space-y-2">
                 {currentDrill.instructions.map((tip, idx) => (
-                  <li key={idx} className="text-sm text-white/80 flex items-start gap-2">
+                  <li key={idx} className="text-sm text-[color:var(--text)] flex items-start gap-2">
                     <span className="text-boxing-red mt-0.5">•</span>
                     {tip}
                   </li>
@@ -707,7 +707,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
               <>
                 <button
                   onClick={() => setIsPaused(!isPaused)}
-                  className="w-14 h-14 rounded-full bg-dark-card border border-white/20
+                  className="w-14 h-14 rounded-full bg-[color:var(--card)] border border-[color:var(--border)]
                              hover:border-boxing-red flex items-center justify-center transition-colors"
                 >
                   {isPaused ? <Play className="w-5 h-5 ml-0.5" /> : <MicOff className="w-5 h-5" />}
@@ -723,7 +723,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
                 <button
                   onClick={skipDrill}
-                  className="w-14 h-14 rounded-full bg-dark-card border border-white/20
+                  className="w-14 h-14 rounded-full bg-[color:var(--card)] border border-[color:var(--border)]
                              hover:border-boxing-red flex items-center justify-center transition-colors"
                   title="Skip to next drill"
                 >
@@ -752,12 +752,12 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
       {showChecklist && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-white/10">
+          <div className="glass-card rounded-2xl p-6 w-full max-w-md border border-[color:var(--border)]">
             <h3 className="text-xl font-semibold mb-2">Post-round reset</h3>
-            <p className="text-sm text-gray-400 mb-4">Quick checklist before the next bell.</p>
+            <p className="text-sm text-[color:var(--muted)] mb-4">Quick checklist before the next bell.</p>
             <div className="space-y-3 mb-4">
               {POST_ROUND_CHECKLIST.map((item, idx) => (
-                <label key={item} className="flex items-center gap-3 text-sm text-gray-200">
+                <label key={item} className="flex items-center gap-3 text-sm text-[color:var(--text)]">
                   <input
                     type="checkbox"
                     checked={checklistState[idx]}
@@ -766,7 +766,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
                       next[idx] = e.target.checked;
                       setChecklistState(next);
                     }}
-                    className="w-4 h-4 rounded border-white/20 bg-black/40"
+                    className="w-4 h-4 rounded border-[color:var(--border)] bg-black/40"
                   />
                   {item}
                 </label>
@@ -775,7 +775,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             <div className="flex gap-3">
               <button
                 onClick={continueAfterChecklist}
-                className="flex-1 py-2 rounded-lg border border-white/20 text-sm"
+                className="flex-1 py-2 rounded-lg border border-[color:var(--border)] text-sm"
               >
                 Skip
               </button>
