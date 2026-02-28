@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { loadKeys, saveKeys } from '../../lib/storage';
 
@@ -23,9 +23,7 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
   const router = useRouter();
 
   const [mistralKey, setMistralKey] = useState('');
-  const [elevenLabsKey, setElevenLabsKey] = useState('');
   const [showMistral, setShowMistral] = useState(false);
-  const [showElevenLabs, setShowElevenLabs] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -33,20 +31,16 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
     const existing = loadKeys();
     if (existing) {
       setMistralKey(existing.mistralKey);
-      setElevenLabsKey(existing.elevenLabsKey);
     }
   }, []);
 
-  const canSubmit = mistralKey.trim().length > 0 && elevenLabsKey.trim().length > 0;
+  const canSubmit = mistralKey.trim().length > 0;
 
   const onTest = async () => {
     setBusy(true);
     setStatus(null);
     try {
-      await Promise.all([
-        testKey('/api/mistral/test', mistralKey.trim()),
-        testKey('/api/elevenlabs/test', elevenLabsKey.trim()),
-      ]);
+      await testKey('/api/mistral/test', mistralKey.trim());
       setStatus({ type: 'ok', text: messages.setup.success });
     } catch (e: any) {
       setStatus({ type: 'err', text: e?.message || messages.setup.error });
@@ -58,8 +52,8 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    saveKeys({ mistralKey: mistralKey.trim(), elevenLabsKey: elevenLabsKey.trim() });
-    router.push(`/${locale}/camera`);
+    saveKeys({ mistralKey: mistralKey.trim() });
+    router.push(`/${locale}/session`);
   };
 
   return (
@@ -89,24 +83,10 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2 text-[color:var(--muted)]">{messages.setup.elevenLabel}</label>
-            <div className="relative">
-              <input
-                type={showElevenLabs ? 'text' : 'password'}
-                value={elevenLabsKey}
-                onChange={(e) => setElevenLabsKey(e.target.value)}
-                placeholder={messages.setup.elevenHint}
-                className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] focus:border-boxing-red focus:outline-none transition-all text-[color:var(--text)] placeholder:text-[color:var(--muted)]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowElevenLabs((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors"
-              >
-                {showElevenLabs ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
+          {/* ElevenLabs pre-configured indicator */}
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30">
+            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="text-sm text-emerald-200">{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
           </div>
 
           {status && (
@@ -141,7 +121,7 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
           </div>
 
           <p className="text-xs text-[color:var(--muted)]">
-            Keys are stored in <code className="text-[color:var(--text)]">localStorage</code> on this device only. This app does not persist keys server-side.
+            Your Mistral key is stored in <code className="text-[color:var(--text)]">localStorage</code> on this device only.
           </p>
         </div>
       </form>
