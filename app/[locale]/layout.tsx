@@ -4,7 +4,6 @@ import { I18nProvider } from '../i18n/I18nProvider';
 import { isLocale } from '../i18n/messages';
 import Nav from '../components/Nav';
 import HeaderBanner from '../components/HeaderBanner';
-import Footer from '../components/Footer';
 
 export default function LocaleLayout({
   children,
@@ -22,7 +21,6 @@ export default function LocaleLayout({
         <Nav locale={locale} />
         <HeaderBanner />
         <div className="max-w-5xl mx-auto px-6 py-10 flex-1 w-full">{children}</div>
-        <Footer />
       </div>
     </I18nProvider>
   );

@@ -314,10 +314,28 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
       BOXING_DRILLS.length,
       currentDrillIndex + (timeRemaining === 0 ? 1 : 0)
     );
-    const recap = `Rounds: ${roundsCompleted} / ${BOXING_DRILLS.length}\nStyle: ${STYLE_PRESETS[stylePreset].label}\nTop focus: ${analysisFeedback || 'Guard, balance, breathing.'}`;
+
+    const sessionData = {
+      seconds: elapsedSeconds,
+      roundsCompleted,
+      totalRounds: BOXING_DRILLS.length,
+      style: STYLE_PRESETS[stylePreset].label,
+      styleKey: stylePreset,
+      drills: BOXING_DRILLS.slice(0, roundsCompleted).map((d) => ({
+        name: d.name,
+        type: d.type,
+        duration: d.duration,
+      })),
+      topFocus: analysisFeedback || 'Guard, balance, breathing.',
+      ttsEngine,
+      date: new Date().toISOString(),
+    };
+
+    sessionStorage.setItem('lastSessionData', JSON.stringify(sessionData));
+    // Keep legacy keys for backward compat
     sessionStorage.setItem('lastSessionSeconds', String(elapsedSeconds));
-    sessionStorage.setItem('lastSessionSummary', recap);
-  }, [analysisFeedback, currentDrillIndex, elapsedSeconds, stylePreset, timeRemaining]);
+    sessionStorage.setItem('lastSessionSummary', `Rounds: ${roundsCompleted} / ${BOXING_DRILLS.length}\nStyle: ${STYLE_PRESETS[stylePreset].label}\nTop focus: ${sessionData.topFocus}`);
+  }, [analysisFeedback, currentDrillIndex, elapsedSeconds, stylePreset, timeRemaining, ttsEngine]);
 
   const playBell = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -770,12 +788,6 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         </div>
       )}
 
-      {/* Footer info */}
-      <footer className="mt-6 pt-4 text-center border-t border-white/10">
-        <p className="text-xs text-gray-600">
-          Vision analysis powered by Mistral AI • Voice by ElevenLabs
-        </p>
-      </footer>
     </div>
   );
 }
