@@ -1,13 +1,13 @@
 'use client';
 
-import ImageCarousel from './ImageCarousel';
+import ImageCarousel, { FOOTER_IMAGES } from './ImageCarousel';
 
 export default function Footer() {
   return (
     <footer className="mt-auto border-t border-[color:var(--border)]">
       {/* Carousel section */}
       <div className="max-w-full overflow-hidden">
-        <ImageCarousel />
+        <ImageCarousel direction="left" images={FOOTER_IMAGES} />
       </div>
 
       {/* Credits bar */}
