@@ -182,38 +182,47 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
   const speakNative = useCallback((text: string): Promise<void> => {
     return new Promise((resolve) => {
-      if (typeof window === 'undefined' || !window.speechSynthesis) {
+      try {
+        if (typeof window === 'undefined' || !window.speechSynthesis) {
+          resolve();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.05;
+        utterance.pitch = 0.9;
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha'))
+          || voices.find(v => v.lang.startsWith('en') && v.localService)
+          || voices.find(v => v.lang.startsWith('en'));
+        if (preferred) utterance.voice = preferred;
+        utterance.onend = () => resolve();
+        utterance.onerror = () => resolve();
+        window.speechSynthesis.speak(utterance);
+        // Safety timeout: resolve after 15s even if speech hangs
+        setTimeout(resolve, 15_000);
+      } catch {
         resolve();
-        return;
       }
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
-      utterance.pitch = 0.9;
-      // Prefer an English voice with a natural sound
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha'))
-        || voices.find(v => v.lang.startsWith('en') && v.localService)
-        || voices.find(v => v.lang.startsWith('en'));
-      if (preferred) utterance.voice = preferred;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
-      window.speechSynthesis.speak(utterance);
     });
   }, []);
 
+  // speakText NEVER throws — the coaching flow must never stall on TTS
   const speakText = useCallback(async (text: string) => {
-    if (!text.trim()) return;
-    setIsSpeaking(true);
-
-    // If ElevenLabs already failed, go straight to native TTS
-    if (elevenLabsFailedRef.current) {
-      await speakNative(text);
+    if (!text.trim()) {
       setIsSpeaking(false);
       return;
     }
+    setIsSpeaking(true);
 
     try {
+      // If ElevenLabs already failed, go straight to native TTS
+      if (elevenLabsFailedRef.current) {
+        await speakNative(text);
+        setIsSpeaking(false);
+        return;
+      }
+
       const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
         method: 'POST',
         headers: {
@@ -241,16 +250,29 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         audioRef.current = new Audio();
       }
       audioRef.current.src = audioUrl;
-      await audioRef.current.play();
+
+      try {
+        await audioRef.current.play();
+      } catch {
+        // Autoplay blocked — fall through to native
+        throw new Error('Autoplay blocked');
+      }
+
       audioRef.current.onended = () => {
         URL.revokeObjectURL(audioUrl);
         setIsSpeaking(false);
       };
+      // Safety: if onended never fires, release after 30s
+      setTimeout(() => setIsSpeaking(false), 30_000);
     } catch {
-      // ElevenLabs failed — switch to native TTS permanently
+      // ElevenLabs failed — switch to native TTS for the rest of session
       elevenLabsFailedRef.current = true;
       setTtsEngine('native');
-      await speakNative(text);
+      try {
+        await speakNative(text);
+      } catch {
+        // Native also failed — just continue silently
+      }
       setIsSpeaking(false);
     }
   }, [elevenLabsKey, speakNative]);
