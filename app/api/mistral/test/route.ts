@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     if (!r.ok) {
       const body = await r.text().catch(() => '');
       return NextResponse.json(
-        { ok: false, status: r.status, error: body?.slice(0, 200) || 'Request failed' },
+        { ok: false, status: r.status, error: `Mistral key invalid: ${body?.slice(0, 150) || 'Request failed'}` },
         { status: 401 }
       );
     }

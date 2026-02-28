@@ -8,7 +8,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: false, error: 'Missing key' }, { status: 400 });
     }
 
-    const r = await fetch('https://api.elevenlabs.io/v1/voices', {
+    const r = await fetch('https://api.elevenlabs.io/v1/models', {
       headers: {
         'xi-api-key': key,
       },
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     if (!r.ok) {
       const body = await r.text().catch(() => '');
       return NextResponse.json(
-        { ok: false, status: r.status, error: body?.slice(0, 200) || 'Request failed' },
+        { ok: false, status: r.status, error: `ElevenLabs key invalid: ${body?.slice(0, 150) || 'Request failed'}` },
         { status: 401 }
       );
     }
