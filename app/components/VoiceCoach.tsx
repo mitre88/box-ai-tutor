@@ -6,6 +6,8 @@ import SessionTimer from './SessionTimer';
 import DrillCard from './DrillCard';
 import VoiceWave from './VoiceWave';
 import CameraFeed from './CameraFeed';
+import { loadDifficulty, saveSession } from '../lib/storage';
+import type { Difficulty } from '../lib/storage';
 
 interface VoiceCoachProps {
   mistralKey: string;
@@ -21,56 +23,38 @@ interface Drill {
   instructions: string[];
 }
 
-const BOXING_DRILLS: Drill[] = [
-  { 
-    id: 1, 
-    name: 'Stance & Movement', 
-    description: 'Find your balance, light on your feet', 
-    duration: 120, 
-    type: 'warmup',
-    instructions: ['Hands up, chin down', 'Bounce lightly', 'Stay on balls of feet']
-  },
-  { 
-    id: 2, 
-    name: 'Jab-Cross Fundamentals', 
-    description: 'Perfect your 1-2 combination', 
-    duration: 180, 
-    type: 'technique',
-    instructions: ['Extend jab fully', 'Rotate hips on cross', 'Return to guard quickly']
-  },
-  { 
-    id: 3, 
-    name: 'Speed Round', 
-    description: 'Maximum output, maintain form', 
-    duration: 60, 
-    type: 'combo',
-    instructions: ['Fast hands', 'Don\'t sacrifice technique', 'Breathe with each punch']
-  },
-  { 
-    id: 4, 
-    name: 'Defense Master', 
-    description: 'Slips, rolls, and counters', 
-    duration: 150, 
-    type: 'technique',
-    instructions: ['Slip left, slip right', 'Roll under imaginary punches', 'Counter after defense']
-  },
-  { 
-    id: 5, 
-    name: 'Hooks & Uppercuts', 
-    description: 'Power shots from close range', 
-    duration: 180, 
-    type: 'combo',
-    instructions: ['Keep elbow up on hooks', 'Drive from legs on uppercuts', 'Stay balanced']
-  },
-  { 
-    id: 6, 
-    name: 'Cool Down', 
-    description: 'Breathing and stretching', 
-    duration: 120, 
-    type: 'cooldown',
-    instructions: ['Deep breaths', 'Shake out arms', 'Reflect on session']
-  },
-];
+const DRILLS_BY_DIFFICULTY: Record<Difficulty, Drill[]> = {
+  beginner: [
+    { id: 1, name: 'Basic Stance', description: 'Learn proper boxing stance', duration: 90, type: 'warmup', instructions: ['Feet shoulder-width apart', 'Hands up by cheeks', 'Slight bend in knees'] },
+    { id: 2, name: 'Jab Practice', description: 'Master the basic jab', duration: 120, type: 'technique', instructions: ['Extend arm straight', 'Snap it back quick', 'Keep other hand up'] },
+    { id: 3, name: 'Basic Footwork', description: 'Move forward, back, and side to side', duration: 90, type: 'technique', instructions: ['Small steps only', 'Never cross your feet', 'Stay light on toes'] },
+    { id: 4, name: 'Jab-Cross Intro', description: 'Your first combination', duration: 120, type: 'combo', instructions: ['Jab with lead hand', 'Cross with rear hand', 'Return to guard'] },
+    { id: 5, name: 'Cool Down', description: 'Breathing and stretching', duration: 90, type: 'cooldown', instructions: ['Deep breaths', 'Shake out arms', 'Stretch shoulders'] },
+  ],
+  intermediate: [
+    { id: 1, name: 'Stance & Movement', description: 'Find your balance, light on your feet', duration: 120, type: 'warmup', instructions: ['Hands up, chin down', 'Bounce lightly', 'Stay on balls of feet'] },
+    { id: 2, name: 'Jab-Cross Fundamentals', description: 'Perfect your 1-2 combination', duration: 180, type: 'technique', instructions: ['Extend jab fully', 'Rotate hips on cross', 'Return to guard quickly'] },
+    { id: 3, name: 'Speed Round', description: 'Maximum output, maintain form', duration: 60, type: 'combo', instructions: ['Fast hands', 'Don\'t sacrifice technique', 'Breathe with each punch'] },
+    { id: 4, name: 'Defense Master', description: 'Slips, rolls, and counters', duration: 150, type: 'technique', instructions: ['Slip left, slip right', 'Roll under imaginary punches', 'Counter after defense'] },
+    { id: 5, name: 'Hooks & Uppercuts', description: 'Power shots from close range', duration: 180, type: 'combo', instructions: ['Keep elbow up on hooks', 'Drive from legs on uppercuts', 'Stay balanced'] },
+    { id: 6, name: 'Cool Down', description: 'Breathing and stretching', duration: 120, type: 'cooldown', instructions: ['Deep breaths', 'Shake out arms', 'Reflect on session'] },
+  ],
+  advanced: [
+    { id: 1, name: 'Dynamic Warm-Up', description: 'Shadow boxing with footwork', duration: 150, type: 'warmup', instructions: ['Mix jabs while moving', 'Level changes', 'Constant head movement'] },
+    { id: 2, name: '5-Punch Combos', description: 'Jab-cross-hook-cross-uppercut', duration: 210, type: 'combo', instructions: ['Flow between punches', 'Full hip rotation each shot', 'Snap back to guard'] },
+    { id: 3, name: 'Pressure Fighting', description: 'Cut angles and close distance', duration: 180, type: 'technique', instructions: ['Step off center line', 'Jab to the body', 'Double up on hooks'] },
+    { id: 4, name: 'Counter Punching', description: 'Slip and fire back immediately', duration: 180, type: 'technique', instructions: ['Slip outside the jab', 'Counter with cross', 'Pull counter the right'] },
+    { id: 5, name: 'Championship Round', description: 'All out — everything you have', duration: 90, type: 'combo', instructions: ['Volume punching', 'Don\'t let hands drop', 'Dig to body then head'] },
+    { id: 6, name: 'Body Shots & Clinch', description: 'Inside fighting fundamentals', duration: 180, type: 'technique', instructions: ['Shovel hook to liver', 'Uppercut in close', 'Control with lead hand'] },
+    { id: 7, name: 'Active Recovery', description: 'Cool down with light shadow boxing', duration: 120, type: 'cooldown', instructions: ['Light movement only', 'Focus on breathing', 'Visualize your best combos'] },
+  ],
+};
+
+const DIFFICULTY_COACH_PROMPT: Record<Difficulty, string> = {
+  beginner: 'The user is a beginner. Use simple language, be very encouraging, explain technique basics clearly. Focus on building confidence.',
+  intermediate: 'The user is intermediate. Give specific technique corrections, push them to improve, balance encouragement with constructive feedback.',
+  advanced: 'The user is advanced. Be demanding, focus on subtle technique details, ring IQ, and fight strategy. Push them to their limits.',
+};
 
 const VOICE_ID = '21m00Tcm4TlvDq8ikWAM';
 
@@ -100,10 +84,12 @@ const POST_ROUND_CHECKLIST = [
 ];
 
 export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
+  const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
+  const [drills, setDrills] = useState<Drill[]>(DRILLS_BY_DIFFICULTY.intermediate);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(BOXING_DRILLS[0].duration);
+  const [timeRemaining, setTimeRemaining] = useState(DRILLS_BY_DIFFICULTY.intermediate[0].duration);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
@@ -131,7 +117,16 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   const bellContextRef = useRef<AudioContext | null>(null);
   const elevenLabsFailedRef = useRef(false);
 
-  const currentDrill = BOXING_DRILLS[currentDrillIndex];
+  // Load difficulty on mount
+  useEffect(() => {
+    const d = loadDifficulty();
+    setDifficulty(d);
+    const selectedDrills = DRILLS_BY_DIFFICULTY[d];
+    setDrills(selectedDrills);
+    setTimeRemaining(selectedDrills[0].duration);
+  }, []);
+
+  const currentDrill = drills[currentDrillIndex];
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -289,7 +284,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
         messages: [
           {
             role: 'system',
-            content: `You are a boxing coach. ${STYLE_PRESETS[stylePreset].prompt} Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.`
+            content: `You are a boxing coach. ${STYLE_PRESETS[stylePreset].prompt} ${DIFFICULTY_COACH_PROMPT[difficulty]} Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.`
           },
           {
             role: 'user',
@@ -306,36 +301,36 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
     const data = await response.json();
     return data?.choices?.[0]?.message?.content?.trim() || 'Keep moving with purpose and stay relaxed in the shoulders.';
-  }, [mistralKey, stylePreset]);
+  }, [mistralKey, stylePreset, difficulty]);
 
   const storeSessionRecap = useCallback(() => {
     if (typeof window === 'undefined') return;
     const roundsCompleted = Math.min(
-      BOXING_DRILLS.length,
+      drills.length,
       currentDrillIndex + (timeRemaining === 0 ? 1 : 0)
     );
 
     const sessionData = {
+      id: Date.now().toString(36),
       seconds: elapsedSeconds,
       roundsCompleted,
-      totalRounds: BOXING_DRILLS.length,
+      totalRounds: drills.length,
       style: STYLE_PRESETS[stylePreset].label,
-      styleKey: stylePreset,
-      drills: BOXING_DRILLS.slice(0, roundsCompleted).map((d) => ({
+      difficulty,
+      drills: drills.slice(0, roundsCompleted).map((d) => ({
         name: d.name,
         type: d.type,
         duration: d.duration,
       })),
       topFocus: analysisFeedback || 'Guard, balance, breathing.',
-      ttsEngine,
       date: new Date().toISOString(),
     };
 
+    // Save to localStorage history
+    saveSession(sessionData);
+    // Also keep in sessionStorage for summary page
     sessionStorage.setItem('lastSessionData', JSON.stringify(sessionData));
-    // Keep legacy keys for backward compat
-    sessionStorage.setItem('lastSessionSeconds', String(elapsedSeconds));
-    sessionStorage.setItem('lastSessionSummary', `Rounds: ${roundsCompleted} / ${BOXING_DRILLS.length}\nStyle: ${STYLE_PRESETS[stylePreset].label}\nTop focus: ${sessionData.topFocus}`);
-  }, [analysisFeedback, currentDrillIndex, elapsedSeconds, stylePreset, timeRemaining, ttsEngine]);
+  }, [analysisFeedback, currentDrillIndex, drills, difficulty, elapsedSeconds, stylePreset, timeRemaining]);
 
   const playBell = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -366,7 +361,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
 
   const handleRoundComplete = () => {
     playBell();
-    if (currentDrillIndex >= BOXING_DRILLS.length - 1) {
+    if (currentDrillIndex >= drills.length - 1) {
       setSessionComplete(true);
       setIsActive(false);
       setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
@@ -381,8 +376,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   const handleDrillComplete = () => {
     const nextIndex = currentDrillIndex + 1;
     setCurrentDrillIndex(nextIndex);
-    setTimeRemaining(BOXING_DRILLS[nextIndex].duration);
-    announceDrill(BOXING_DRILLS[nextIndex], true);
+    setTimeRemaining(drills[nextIndex].duration);
+    announceDrill(drills[nextIndex], true);
     playBell();
   };
 
@@ -424,7 +419,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
     setIsActive(false);
     setIsPaused(false);
     setCurrentDrillIndex(0);
-    setTimeRemaining(BOXING_DRILLS[0].duration);
+    setTimeRemaining(drills[0].duration);
     setElapsedSeconds(0);
     setCoachMessage('Ready to train? Enable your camera and press start when you are.');
     setAnalysisFeedback(null);
@@ -526,7 +521,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           </div>
           <h2 className="text-3xl font-bold mb-4 gradient-text">Session Complete!</h2>
           <p className="text-gray-400 mb-6">
-            You crushed {BOXING_DRILLS.length} rounds. The champion's path is built one session at a time.
+            You crushed {drills.length} rounds. The champion's path is built one session at a time.
           </p>
           <div className="space-y-3">
             <button
@@ -550,7 +545,13 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           <h1 className="text-xl font-bold">Fight Corner Coach</h1>
           <p className="text-xs text-gray-400">AI Boxing Coach with Vision + Voice</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className={`flex items-center gap-2 bg-dark-card/70 border px-3 py-1 rounded-full ${
+            difficulty === 'beginner' ? 'border-emerald-400/40' : difficulty === 'advanced' ? 'border-orange-400/40' : 'border-blue-400/40'
+          }`}>
+            <span className="text-xs">{difficulty === 'beginner' ? '🥊' : difficulty === 'advanced' ? '🏆' : '🔥'}</span>
+            <span className="text-xs text-gray-300 capitalize">{difficulty}</span>
+          </div>
           <div className="flex items-center gap-2 bg-dark-card/70 border border-white/10 px-3 py-1 rounded-full">
             <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
             <span className="text-xs text-gray-300">{isActive ? 'Coach Active' : 'Standby'}</span>
@@ -662,7 +663,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           {/* Timer */}
           {isActive && (
             <div className="flex flex-col items-center mb-4 gap-2">
-              <div className="text-xs uppercase tracking-[0.3em] text-gray-500">Round {currentDrillIndex + 1} / {BOXING_DRILLS.length}</div>
+              <div className="text-xs uppercase tracking-[0.3em] text-gray-500">Round {currentDrillIndex + 1} / {drills.length}</div>
               <SessionTimer seconds={timeRemaining} />
             </div>
           )}
@@ -734,7 +735,7 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
           {/* Progress dots */}
           {isActive && (
             <div className="flex justify-center gap-2 mt-4">
-              {BOXING_DRILLS.map((_, index) => (
+              {drills.map((_, index) => (
                 <div
                   key={index}
                   className={`w-2 h-2 rounded-full transition-colors ${

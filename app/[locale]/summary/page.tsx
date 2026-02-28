@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
-import { Clock, Target, Flame, Trophy, Award, RotateCcw, Share2, CheckCircle2 } from 'lucide-react';
+import { loadHistory } from '../../lib/storage';
+import type { SessionRecord } from '../../lib/storage';
+import { Clock, Target, Flame, Trophy, Award, RotateCcw, Share2, CheckCircle2, History } from 'lucide-react';
 
 interface DrillData {
   name: string;
@@ -12,14 +14,14 @@ interface DrillData {
 }
 
 interface SessionData {
+  id?: string;
   seconds: number;
   roundsCompleted: number;
   totalRounds: number;
   style: string;
-  styleKey: string;
+  difficulty?: string;
   drills: DrillData[];
   topFocus: string;
-  ttsEngine: string;
   date: string;
 }
 
@@ -58,6 +60,7 @@ function getAchievements(data: SessionData): { icon: typeof Trophy; label: strin
 export default function SummaryPage() {
   const { locale, messages } = useI18n();
   const [data, setData] = useState<SessionData | null>(null);
+  const [history, setHistory] = useState<SessionRecord[]>([]);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -70,6 +73,7 @@ export default function SummaryPage() {
         // fallback to legacy
       }
     }
+    setHistory(loadHistory());
   }, []);
 
   const handleCopy = async () => {
@@ -92,7 +96,7 @@ export default function SummaryPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Empty state — no session data
+  // Empty state — no current session data
   if (!data) {
     return (
       <div className="space-y-6">
@@ -116,6 +120,36 @@ export default function SummaryPage() {
             {locale === 'es' ? 'Iniciar sesión' : locale === 'fr' ? 'Démarrer une session' : 'Start a session'}
           </Link>
         </div>
+
+        {/* Show history even without current session */}
+        {history.length > 0 && (
+          <div className="glass-card rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <History className="w-4 h-4 text-[color:var(--muted)]" />
+              <h3 className="text-sm font-semibold">
+                {locale === 'es' ? 'Sesiones anteriores' : locale === 'fr' ? 'Sessions précédentes' : 'Past Sessions'}
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {history.slice(0, 5).map((session, i) => (
+                <div key={session.id || i} className="flex items-center justify-between p-3 rounded-lg border border-[color:var(--border)] bg-white/[0.02]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                      <span className="text-xs">{session.difficulty === 'beginner' ? '🥊' : session.difficulty === 'advanced' ? '🏆' : '🔥'}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{formatTime(session.seconds)} — {session.roundsCompleted}/{session.totalRounds} rounds</p>
+                      <p className="text-xs text-[color:var(--muted)]">
+                        {new Date(session.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs font-medium text-[color:var(--muted)] shrink-0 ml-3">{session.style}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -264,6 +298,51 @@ export default function SummaryPage() {
         </h3>
         <p className="text-sm text-[color:var(--text)] leading-relaxed">{data.topFocus}</p>
       </div>
+
+      {/* Session History */}
+      {history.length > 1 && (
+        <div className="glass-card rounded-xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <History className="w-4 h-4 text-[color:var(--muted)]" />
+            <h3 className="text-sm font-semibold">
+              {locale === 'es' ? 'Historial de sesiones' : locale === 'fr' ? 'Historique des sessions' : 'Session History'}
+            </h3>
+          </div>
+          <div className="space-y-3">
+            {history.slice(0, 10).map((session, i) => (
+              <div
+                key={session.id || i}
+                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                  i === 0 ? 'border-boxing-red/30 bg-boxing-red/5' : 'border-[color:var(--border)] bg-white/[0.02]'
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-[color:var(--muted)]">
+                      {session.difficulty === 'beginner' ? '🥊' : session.difficulty === 'advanced' ? '🏆' : '🔥'}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {formatTime(session.seconds)} — {session.roundsCompleted}/{session.totalRounds} rounds
+                    </p>
+                    <p className="text-xs text-[color:var(--muted)]">
+                      {new Date(session.date).toLocaleDateString(locale, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      {session.difficulty && <span className="ml-2 capitalize">{session.difficulty}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 ml-3">
+                  <p className="text-xs font-medium text-[color:var(--muted)]">{session.style}</p>
+                  {session.roundsCompleted >= session.totalRounds && (
+                    <span className="text-[10px] text-yellow-400 font-semibold">Complete</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">

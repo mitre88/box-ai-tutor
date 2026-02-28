@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
-import { loadKeys, saveKeys } from '../../lib/storage';
+import { loadKeys, saveKeys, loadDifficulty, saveDifficulty } from '../../lib/storage';
+import type { Difficulty } from '../../lib/storage';
 
 async function testKey(url: string, key: string) {
   const r = await fetch(url, {
@@ -26,12 +27,14 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
   const [showMistral, setShowMistral] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
 
   useEffect(() => {
     const existing = loadKeys();
     if (existing) {
       setMistralKey(existing.mistralKey);
     }
+    setDifficulty(loadDifficulty());
   }, []);
 
   const canSubmit = mistralKey.trim().length > 0;
@@ -53,6 +56,7 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
     e.preventDefault();
     if (!canSubmit) return;
     saveKeys({ mistralKey: mistralKey.trim() });
+    saveDifficulty(difficulty);
     router.push(`/${locale}/session`);
   };
 
@@ -87,6 +91,34 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30">
             <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
             <span className="text-sm text-emerald-200">{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
+          </div>
+
+          {/* Difficulty selector */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-[color:var(--muted)]">
+              {locale === 'es' ? 'Nivel de dificultad' : locale === 'fr' ? 'Niveau de difficulté' : 'Difficulty Level'}
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {([
+                { key: 'beginner' as Difficulty, en: 'Beginner', es: 'Principiante', fr: 'Débutant', icon: '🥊' },
+                { key: 'intermediate' as Difficulty, en: 'Intermediate', es: 'Intermedio', fr: 'Intermédiaire', icon: '🔥' },
+                { key: 'advanced' as Difficulty, en: 'Advanced', es: 'Avanzado', fr: 'Avancé', icon: '🏆' },
+              ]).map((lvl) => (
+                <button
+                  key={lvl.key}
+                  type="button"
+                  onClick={() => setDifficulty(lvl.key)}
+                  className={`px-3 py-3 rounded-lg border text-center text-sm font-medium transition-all ${
+                    difficulty === lvl.key
+                      ? 'border-boxing-red bg-boxing-red/15 text-[color:var(--text)]'
+                      : 'border-[color:var(--border)] hover:border-boxing-red/40 text-[color:var(--muted)]'
+                  }`}
+                >
+                  <span className="block text-lg mb-1">{lvl.icon}</span>
+                  {lvl[locale] || lvl.en}
+                </button>
+              ))}
+            </div>
           </div>
 
           {status && (
