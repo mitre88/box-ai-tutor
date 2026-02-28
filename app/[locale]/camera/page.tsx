@@ -35,10 +35,24 @@ export default function CameraPage() {
 
       <CameraFeed />
 
+      {/* Tips */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {[
+          { icon: '📏', text: locale === 'es' ? 'Distancia: 1.5–2m de la cámara' : locale === 'fr' ? 'Distance : 1,5–2m de la caméra' : 'Stand 1.5–2m from the camera' },
+          { icon: '💡', text: locale === 'es' ? 'Buena iluminación frontal' : locale === 'fr' ? 'Bon éclairage frontal' : 'Good front-facing lighting' },
+          { icon: '🥊', text: locale === 'es' ? 'Cuerpo superior visible' : locale === 'fr' ? 'Haut du corps visible' : 'Full upper body in frame' },
+        ].map((tip) => (
+          <div key={tip.icon} className="glass-card rounded-lg px-4 py-3 flex items-center gap-3 text-sm text-[color:var(--muted)]">
+            <span className="text-lg">{tip.icon}</span>
+            {tip.text}
+          </div>
+        ))}
+      </div>
+
       <div>
         <Link
           href={`/${locale}/session`}
-          className="inline-block px-4 py-2 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold transition-all"
+          className="inline-block px-5 py-2.5 rounded-lg bg-boxing-red hover:bg-red-600 font-semibold text-white transition-all"
         >
           {messages.camera.startSession}
         </Link>

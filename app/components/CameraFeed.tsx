@@ -120,17 +120,20 @@ export default function CameraFeed({ onFrame, isAnalyzing, feedbackLabel, feedba
       />
 
       {!isActive && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="w-16 h-16 rounded-full bg-dark-card border border-white/10 flex items-center justify-center mb-4">
-            <CameraOff className="w-8 h-8 text-gray-400" />
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
+          <div className="w-16 h-16 rounded-full bg-[color:var(--card)] border border-[color:var(--border)] flex items-center justify-center mb-4">
+            <CameraOff className="w-8 h-8 text-[color:var(--muted)]" />
           </div>
-          <p className="text-gray-400 text-sm mb-4">Camera is off</p>
+          <p className="text-[color:var(--muted)] text-sm mb-2">Camera is off</p>
+          <p className="text-[color:var(--muted)] text-xs mb-5 max-w-xs text-center opacity-70">
+            Position yourself 1.5–2m from the camera with your full upper body visible.
+          </p>
           {error && (
-            <p className="text-red-400 text-xs mb-4 max-w-[80%] text-center">{error}</p>
+            <p className="text-red-500 text-xs mb-4 max-w-[80%] text-center">{error}</p>
           )}
           <button
             onClick={startCamera}
-            className="px-4 py-2 bg-boxing-red hover:bg-red-600 rounded-lg text-sm font-medium"
+            className="px-5 py-2.5 bg-boxing-red hover:bg-red-600 rounded-lg text-sm font-semibold text-white transition-all"
           >
             Enable Camera
           </button>

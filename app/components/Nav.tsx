@@ -69,7 +69,7 @@ export default function Nav({ locale }: { locale: Locale }) {
                   'text-sm px-3 py-1.5 rounded-lg border transition-all',
                   active
                     ? 'border-boxing-red bg-boxing-red/15 text-[color:var(--text)]'
-                    : 'border-[color:var(--border)] hover:border-boxing-red/40 hover:bg-black/5'
+                    : 'border-[color:var(--border)] text-[color:var(--text)] hover:border-boxing-red/40 hover:bg-black/5'
                 )}
               >
                 {it.label}

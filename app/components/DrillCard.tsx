@@ -15,10 +15,10 @@ interface DrillCardProps {
 }
 
 const typeColors = {
-  warmup: 'text-yellow-400',
-  technique: 'text-blue-400',
+  warmup: 'text-amber-500',
+  technique: 'text-blue-500',
   combo: 'text-boxing-red',
-  cooldown: 'text-green-400',
+  cooldown: 'text-emerald-500',
 };
 
 const typeLabels = {
@@ -35,7 +35,7 @@ export default function DrillCard({ drill, isActive, progress }: DrillCardProps)
     }`}>
       {/* Progress bar */}
       {isActive && (
-        <div className="w-full h-1 bg-gray-700 rounded-full mb-4 overflow-hidden">
+        <div className="w-full h-1 bg-[color:var(--border)] rounded-full mb-4 overflow-hidden">
           <div 
             className="h-full bg-boxing-red transition-all duration-1000"
             style={{ width: `${progress * 100}%` }}
@@ -52,10 +52,10 @@ export default function DrillCard({ drill, isActive, progress }: DrillCardProps)
       <h3 className="text-2xl font-bold mb-2">{drill.name}</h3>
       
       {/* Description */}
-      <p className="text-gray-400 text-sm mb-4">{drill.description}</p>
+      <p className="text-[color:var(--muted)] text-sm mb-4">{drill.description}</p>
 
       {/* Duration */}
-      <div className="flex items-center gap-2 text-sm text-gray-500">
+      <div className="flex items-center gap-2 text-sm text-[color:var(--muted)]">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10" strokeWidth="2" />
           <path strokeWidth="2" strokeLinecap="round" d="M12 6v6l4 2" />

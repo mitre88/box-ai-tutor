@@ -103,10 +103,14 @@ body {
   border: 1px solid var(--border);
 }
 
-/* Neon glow effect */
+/* Neon glow effect — dark mode only */
 .neon-glow {
   box-shadow: 0 0 20px rgba(255, 45, 45, 0.5),
               0 0 40px rgba(255, 45, 45, 0.3);
+}
+
+[data-theme='light'] .neon-glow {
+  box-shadow: 0 4px 14px rgba(255, 45, 45, 0.25);
 }
 
 /* Voice wave animation bars */

@@ -129,7 +129,7 @@ export default function Home({ params }: { params: { locale: string } }) {
             { step: '3', en: 'Train with real-time AI coaching', es: 'Entrena con coaching IA en tiempo real', fr: 'Entraînez-vous avec le coaching IA' },
           ].map((s) => (
             <div key={s.step} className="flex-1 glass-card rounded-xl p-5 text-center">
-              <div className="w-10 h-10 rounded-full bg-boxing-red/20 text-boxing-red font-bold text-lg flex items-center justify-center mx-auto mb-3">
+              <div className="w-10 h-10 rounded-full bg-boxing-red text-white font-bold text-lg flex items-center justify-center mx-auto mb-3">
                 {s.step}
               </div>
               <p className="text-sm font-medium">{s[locale]}</p>

@@ -5,8 +5,13 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'Box AI Tutor',
-  description: 'Box AI Tutor web (Next.js + App Router)',
+  title: 'Box AI Tutor — Your AI Boxing Coach',
+  description: 'Real-time form analysis, voice coaching, and structured drills powered by Mistral AI and ElevenLabs.',
+  openGraph: {
+    title: 'Box AI Tutor',
+    description: 'Your AI Boxing Coach — Real-time form analysis, voice coaching, and structured drills.',
+    siteName: 'Box AI Tutor',
+  },
 }
 
 export default function RootLayout({
