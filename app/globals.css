@@ -10,6 +10,9 @@
   --card: #141416;
   --card-glass: rgba(20, 20, 22, 0.7);
   --border: rgba(255, 255, 255, 0.12);
+  --success-text: #6ee7b7;
+  --success-icon: #34d399;
+  --error-text: #fca5a5;
 }
 
 [data-theme='light'] {
@@ -19,6 +22,9 @@
   --card: #ffffff;
   --card-glass: rgba(255, 255, 255, 0.75);
   --border: rgba(15, 23, 42, 0.12);
+  --success-text: #047857;
+  --success-icon: #059669;
+  --error-text: #b91c1c;
 }
 
 body {

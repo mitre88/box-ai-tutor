@@ -98,8 +98,8 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
 
           {/* ElevenLabs pre-configured indicator */}
           <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-emerald-500/10 border border-emerald-400/30">
-            <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span className="text-sm text-emerald-200">{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
+            <CheckCircle className="w-4 h-4 shrink-0" style={{ color: 'var(--success-icon)' }} />
+            <span className="text-sm" style={{ color: 'var(--success-text)' }}>{messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}</span>
           </div>
 
           {/* Difficulty selector */}
@@ -134,9 +134,10 @@ export default function SetupPage({ params }: { params: { locale: string } }) {
             <div
               className={`rounded-lg border px-4 py-3 text-sm font-medium flex items-start gap-2 transition-all ${
                 status.type === 'ok'
-                  ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
-                  : 'border-red-400/40 bg-red-500/10 text-red-200'
+                  ? 'border-emerald-400/40 bg-emerald-500/10'
+                  : 'border-red-400/40 bg-red-500/10'
               }`}
+              style={{ color: status.type === 'ok' ? 'var(--success-text)' : 'var(--error-text, #fca5a5)' }}
             >
               {status.text}
             </div>

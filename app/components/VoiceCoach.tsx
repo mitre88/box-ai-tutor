@@ -635,7 +635,8 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
               <span>Hands-free auto listen</span>
               <button
                 onClick={() => setAutoListen((v) => !v)}
-                className={`px-3 py-1 rounded-full border transition-all ${autoListen ? 'border-emerald-400/50 text-emerald-200 bg-emerald-500/10' : 'border-white/15 text-gray-300'}`}
+                className={`px-3 py-1 rounded-full border transition-all ${autoListen ? 'border-emerald-400/50 bg-emerald-500/10' : 'border-white/15 text-gray-300'}`}
+                style={autoListen ? { color: 'var(--success-text)' } : undefined}
               >
                 {autoListen ? 'On' : 'Off'}
               </button>
