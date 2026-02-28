@@ -19,8 +19,8 @@ export default function LocaleLayout({
     <I18nProvider locale={locale}>
       <div className="min-h-screen flex flex-col">
         <Nav locale={locale} />
-        <HeaderBanner />
         <div className="max-w-5xl mx-auto px-6 py-10 flex-1 w-full">{children}</div>
+        <HeaderBanner />
       </div>
     </I18nProvider>
   );
