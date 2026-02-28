@@ -48,39 +48,14 @@ export default function Nav({ locale }: { locale: Locale }) {
   return (
     <header className="sticky top-0 z-10 backdrop-blur border-b border-[color:var(--border)] bg-black/10">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-        <Link href={`${base}`} className="flex items-center gap-2.5 group">
-          {/* Boxing glove logo */}
-          <div className="relative w-9 h-9 rounded-lg bg-gradient-to-br from-boxing-red to-red-700 flex items-center justify-center shadow-lg shadow-boxing-red/20 group-hover:shadow-boxing-red/40 transition-shadow">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              className="w-5 h-5"
-              stroke="white"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              {/* Glove body */}
-              <path d="M18 11c0-3.87-3.13-7-7-7a7 7 0 0 0-5 2.1V4a2 2 0 0 0-2 2v6a7 7 0 0 0 7 7h0a7 7 0 0 0 7-7z" fill="rgba(255,255,255,0.2)" />
-              {/* Fist line */}
-              <path d="M7 11h10" />
-              {/* Wrist wrap */}
-              <path d="M8 15h8" strokeWidth="1.5" />
-              <path d="M9 18h6" strokeWidth="1.5" />
-            </svg>
-            {/* Pulse dot */}
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-green-400 border border-black/30" />
-          </div>
-          {/* App name */}
-          <div className="flex flex-col leading-none">
-            <span className="text-[15px] font-black tracking-tight">
-              <span className="gradient-text">BOX</span>
-              <span className="text-[color:var(--text)] ml-0.5">AI</span>
-            </span>
-            <span className="text-[10px] font-medium tracking-[0.15em] text-[color:var(--muted)] uppercase">
-              Tutor
-            </span>
-          </div>
+        <Link href={`${base}`} className="flex flex-col leading-none">
+          <span className="text-xl font-black tracking-tight">
+            <span className="gradient-text">BOX</span>
+            <span className="text-[color:var(--text)] ml-1">AI</span>
+          </span>
+          <span className="text-[11px] font-medium tracking-[0.18em] text-[color:var(--muted)] uppercase">
+            Tutor
+          </span>
         </Link>
 
         <nav className="flex items-center gap-2">
