@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Menu, X } from 'lucide-react';
 import type { Locale } from '../i18n/messages';
 import { locales } from '../i18n/messages';
 import { useI18n } from '../i18n/I18nProvider';
@@ -16,6 +16,7 @@ export default function Nav({ locale }: { locale: Locale }) {
   const pathname = usePathname();
   const { messages } = useI18n();
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -26,6 +27,11 @@ export default function Nav({ locale }: { locale: Locale }) {
     document.documentElement.dataset.theme = next;
     document.documentElement.style.colorScheme = next;
   }, []);
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -46,8 +52,9 @@ export default function Nav({ locale }: { locale: Locale }) {
   ];
 
   return (
-    <header className="sticky top-0 z-10 backdrop-blur border-b border-[color:var(--border)] bg-black/10">
+    <header className="sticky top-0 z-30 backdrop-blur border-b border-[color:var(--border)] bg-black/10">
       <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+        {/* Logo */}
         <Link href={`${base}`} className="flex flex-col leading-none">
           <span className="text-xl font-black tracking-tight">
             <span className="gradient-text">BOX</span>
@@ -58,7 +65,8 @@ export default function Nav({ locale }: { locale: Locale }) {
           </span>
         </Link>
 
-        <nav className="flex items-center gap-2">
+        {/* Desktop nav */}
+        <nav className="hidden md:flex items-center gap-2">
           {items.map((it) => {
             const active = pathname === it.href;
             return (
@@ -105,7 +113,75 @@ export default function Nav({ locale }: { locale: Locale }) {
             })}
           </div>
         </nav>
+
+        {/* Mobile: theme toggle + hamburger */}
+        <div className="flex md:hidden items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMenuOpen((v) => !v)}
+            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-[color:var(--border)] hover:bg-black/5 transition-all"
+            aria-label="Toggle menu"
+          >
+            {menuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile menu panel */}
+      {menuOpen && (
+        <div className="md:hidden border-t border-[color:var(--border)] bg-[color:var(--bg)]">
+          <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col gap-2">
+            {items.map((it) => {
+              const active = pathname === it.href;
+              return (
+                <Link
+                  key={it.href}
+                  href={it.href}
+                  className={cx(
+                    'text-sm px-4 py-2.5 rounded-lg border transition-all',
+                    active
+                      ? 'border-boxing-red bg-boxing-red/15 text-[color:var(--text)] font-medium'
+                      : 'border-[color:var(--border)] text-[color:var(--text)] hover:border-boxing-red/40'
+                  )}
+                >
+                  {it.label}
+                </Link>
+              );
+            })}
+
+            {/* Language selector */}
+            <div className="flex items-center gap-2 pt-2 border-t border-[color:var(--border)] mt-2">
+              <span className="text-xs text-[color:var(--muted)]">Language:</span>
+              {locales.map((l) => {
+                const next = pathname ? pathname.replace(/^\/(en|es|fr)/, `/${l}`) : `/${l}`;
+                return (
+                  <Link
+                    key={l}
+                    href={next}
+                    className={cx(
+                      'text-xs px-3 py-1.5 rounded-md border transition-all',
+                      l === locale
+                        ? 'border-boxing-red bg-boxing-red/15 text-[color:var(--text)] font-medium'
+                        : 'border-[color:var(--border)] text-[color:var(--text)] hover:border-boxing-red/40'
+                    )}
+                    aria-label={`Switch language to ${l}`}
+                  >
+                    {l.toUpperCase()}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
