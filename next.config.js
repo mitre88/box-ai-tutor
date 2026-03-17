@@ -4,15 +4,6 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  async redirects() {
-    return [
-      {
-        source: '/(.*)',
-        destination: 'https://vercel.com',
-        permanent: false,
-      },
-    ];
-  },
   async headers() {
     return [
       {
