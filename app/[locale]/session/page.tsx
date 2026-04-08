@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { loadKeys } from '../../lib/storage';
+import type { AiProvider } from '../../lib/storage';
 import VoiceCoach from '../../components/VoiceCoach';
 
 export default function SessionPage() {
   const { locale, messages } = useI18n();
 
-  const [keys, setKeys] = useState<{ mistralKey: string; elevenLabsKey: string } | null>(null);
+  const [keys, setKeys] = useState<{ aiKey: string; aiProvider: AiProvider; elevenLabsKey: string } | null>(null);
   const [hasKeys, setHasKeys] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function SessionPage() {
   }, []);
 
   if (hasKeys && keys) {
-    return <VoiceCoach mistralKey={keys.mistralKey} elevenLabsKey={keys.elevenLabsKey} />;
+    return <VoiceCoach aiKey={keys.aiKey} aiProvider={keys.aiProvider} elevenLabsKey={keys.elevenLabsKey} />;
   }
 
   return (

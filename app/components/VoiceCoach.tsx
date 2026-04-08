@@ -7,10 +7,11 @@ import DrillCard from './DrillCard';
 import VoiceWave from './VoiceWave';
 import CameraFeed from './CameraFeed';
 import { loadDifficulty, saveSession } from '../lib/storage';
-import type { Difficulty } from '../lib/storage';
+import type { Difficulty, AiProvider } from '../lib/storage';
 
 interface VoiceCoachProps {
-  mistralKey: string;
+  aiKey: string;
+  aiProvider: AiProvider;
   elevenLabsKey: string;
 }
 
@@ -83,7 +84,7 @@ const POST_ROUND_CHECKLIST = [
   'Small sip of water if needed'
 ];
 
-export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProps) {
+export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCoachProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
   const [drills, setDrills] = useState<Drill[]>(DRILLS_BY_DIFFICULTY.intermediate);
   const [isActive, setIsActive] = useState(false);
@@ -273,14 +274,12 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
   }, [elevenLabsKey, speakNative]);
 
   const fetchCoachReply = useCallback(async (prompt: string) => {
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    const response = await fetch('/api/ai/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${mistralKey}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'mistral-small-latest',
+        key: aiKey,
+        provider: aiProvider,
         messages: [
           {
             role: 'system',
@@ -291,17 +290,16 @@ export default function VoiceCoach({ mistralKey, elevenLabsKey }: VoiceCoachProp
             content: prompt
           }
         ],
-        temperature: 0.7
-      })
+      }),
     });
 
     if (!response.ok) {
-      throw new Error('Mistral request failed');
+      throw new Error('AI request failed');
     }
 
     const data = await response.json();
-    return data?.choices?.[0]?.message?.content?.trim() || 'Keep moving with purpose and stay relaxed in the shoulders.';
-  }, [mistralKey, stylePreset, difficulty]);
+    return data?.reply || 'Keep moving with purpose and stay relaxed in the shoulders.';
+  }, [aiKey, aiProvider, stylePreset, difficulty]);
 
   const storeSessionRecap = useCallback(() => {
     if (typeof window === 'undefined') return;
