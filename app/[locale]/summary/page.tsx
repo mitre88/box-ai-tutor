@@ -360,6 +360,25 @@ export default function SummaryPage() {
           {messages.summary.backToSetup}
         </Link>
       </div>
+
+      {/* Support */}
+      <div className="glass-card rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 border border-[color:var(--border)]">
+        <p className="text-sm text-[color:var(--muted)] text-center sm:text-left">
+          {locale === 'es'
+            ? '¿Disfrutaste el entrenamiento? Invítanos una hamburguesa 🍔'
+            : locale === 'fr'
+            ? 'Vous avez apprécié la session? Offrez-nous un burger 🍔'
+            : 'Great session! If you enjoyed the app, buy us a burger 🍔'}
+        </p>
+        <a
+          href="https://buy.stripe.com/bJefZhfY06wSb7R6X7fbq0c"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[color:var(--card)] border border-[color:var(--border)] hover:border-boxing-red/50 font-semibold transition-all hover:scale-105 text-sm whitespace-nowrap"
+        >
+          🍔 {locale === 'es' ? 'Invitar una hamburguesa' : locale === 'fr' ? 'Offrir un burger' : 'Buy me a burger'}
+        </a>
+      </div>
     </div>
   );
 }

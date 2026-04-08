@@ -124,7 +124,7 @@ export default function Home({ params }: { params: { locale: string } }) {
         </h2>
         <div className="flex flex-col sm:flex-row justify-center gap-6">
           {[
-            { step: '1', en: 'Enter your Mistral API key', es: 'Ingresa tu clave Mistral', fr: 'Entrez votre clé Mistral' },
+            { step: '1', en: 'Enter your AI API key', es: 'Ingresa tu clave API de IA', fr: 'Entrez votre clé API IA' },
             { step: '2', en: 'Enable camera & start session', es: 'Activa cámara e inicia sesión', fr: 'Activez la caméra et démarrez' },
             { step: '3', en: 'Train with real-time AI coaching', es: 'Entrena con coaching IA en tiempo real', fr: 'Entraînez-vous avec le coaching IA' },
           ].map((s) => (
@@ -135,6 +135,27 @@ export default function Home({ params }: { params: { locale: string } }) {
               <p className="text-sm font-medium">{s[locale]}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Support banner */}
+      <section className="text-center">
+        <div className="glass-card rounded-2xl p-6 border border-[color:var(--border)] flex flex-col items-center gap-4">
+          <p className="text-[color:var(--muted)] text-sm">
+            {locale === 'es'
+              ? '¿Te ha gustado el trabajo? Invítanos una hamburguesa 🍔'
+              : locale === 'fr'
+              ? 'Vous avez aimé notre travail? Offrez-nous un burger 🍔'
+              : 'Enjoyed our work? Buy us a burger 🍔'}
+          </p>
+          <a
+            href="https://buy.stripe.com/bJefZhfY06wSb7R6X7fbq0c"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[color:var(--card)] border border-[color:var(--border)] hover:border-boxing-red/50 font-semibold transition-all hover:scale-105 text-sm"
+          >
+            🍔 {locale === 'es' ? 'Invitar una hamburguesa' : locale === 'fr' ? 'Offrir un burger' : 'Buy me a burger'}
+          </a>
         </div>
       </section>
     </div>
