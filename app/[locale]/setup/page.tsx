@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, CheckCircle, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { loadKeys, saveKeys, loadDifficulty, saveDifficulty, AI_PROVIDERS } from '../../lib/storage';
 import type { Difficulty, AiProvider } from '../../lib/storage';
@@ -125,14 +125,6 @@ export default function SetupPage() {
             <p className="text-xs text-[color:var(--muted)] mt-1.5">
               {t(`Example: ${currentProvider.example}`, `Ejemplo: ${currentProvider.example}`, `Exemple: ${currentProvider.example}`)}
             </p>
-          </div>
-
-          {/* ElevenLabs pre-configured indicator */}
-          <div className="flex items-center gap-2 px-4 py-3 rounded-lg border" style={{ background: 'var(--success-bg)', borderColor: 'var(--success-border)' }}>
-            <CheckCircle className="w-4 h-4 shrink-0" style={{ color: 'var(--success-icon)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--success-text)' }}>
-              {messages.setup.elevenLabel} — {messages.setup.elevenPreConfigured}
-            </span>
           </div>
 
           {/* Difficulty selector */}
