@@ -1,5 +1,3 @@
-export const ELEVENLABS_API_KEY = 'sk_370bf1b35c49dd32c9521da9086f9c77dfd7e0c8da9d6343';
-
 export type AiProvider = 'openai' | 'anthropic' | 'mistral' | 'groq' | 'openrouter' | 'gemini';
 
 export const AI_PROVIDERS: { id: AiProvider; label: string; hint: string; example: string }[] = [
@@ -17,15 +15,19 @@ export type ApiKeys = {
   elevenLabsKey: string;
 };
 
-const AI_KEY     = 'boxai_aiKey';
-const AI_PROVIDER = 'boxai_aiProvider';
+const AI_KEY              = 'boxai_aiKey';
+const AI_PROVIDER         = 'boxai_aiProvider';
+const ELEVENLABS_KEY      = 'boxai_elevenLabsKey';
 // Legacy key for backward compat
-const MISTRAL_KEY_LEGACY = 'mistralApiKey';
+const MISTRAL_KEY_LEGACY  = 'mistralApiKey';
 
-export function saveKeys(keys: { aiKey: string; aiProvider: AiProvider }) {
+export function saveKeys(keys: { aiKey: string; aiProvider: AiProvider; elevenLabsKey?: string }) {
   if (typeof window === 'undefined') return;
   localStorage.setItem(AI_KEY, keys.aiKey);
   localStorage.setItem(AI_PROVIDER, keys.aiProvider);
+  if (keys.elevenLabsKey !== undefined) {
+    localStorage.setItem(ELEVENLABS_KEY, keys.elevenLabsKey);
+  }
 }
 
 export function loadKeys(): ApiKeys | null {
@@ -41,14 +43,20 @@ export function loadKeys(): ApiKeys | null {
     if (legacy) {
       aiKey = legacy;
       aiProvider = 'mistral';
-      // Persist migration
       localStorage.setItem(AI_KEY, aiKey);
       localStorage.setItem(AI_PROVIDER, 'mistral');
     }
   }
 
   if (!aiKey || !aiProvider) return null;
-  return { aiKey, aiProvider, elevenLabsKey: ELEVENLABS_API_KEY };
+
+  const elevenLabsKey = localStorage.getItem(ELEVENLABS_KEY) || '';
+  return { aiKey, aiProvider, elevenLabsKey };
+}
+
+export function loadElevenLabsKey(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(ELEVENLABS_KEY) || '';
 }
 
 export function clearKeys() {

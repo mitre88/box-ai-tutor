@@ -20,7 +20,7 @@ export default function SessionPage() {
   }, []);
 
   if (hasKeys && keys) {
-    return <VoiceCoach aiKey={keys.aiKey} aiProvider={keys.aiProvider} elevenLabsKey={keys.elevenLabsKey} />;
+    return <VoiceCoach aiKey={keys.aiKey} aiProvider={keys.aiProvider} elevenLabsKey={keys.elevenLabsKey} locale={locale} />;
   }
 
   return (

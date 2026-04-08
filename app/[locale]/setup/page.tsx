@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, Volume2 } from 'lucide-react';
 import { useI18n } from '../../i18n/I18nProvider';
-import { loadKeys, saveKeys, loadDifficulty, saveDifficulty, AI_PROVIDERS } from '../../lib/storage';
+import { loadKeys, loadElevenLabsKey, saveKeys, loadDifficulty, saveDifficulty, AI_PROVIDERS } from '../../lib/storage';
 import type { Difficulty, AiProvider } from '../../lib/storage';
 
 async function testKey(key: string, provider: AiProvider): Promise<{ format: string }> {
@@ -27,6 +27,8 @@ export default function SetupPage() {
   const [provider, setProvider] = useState<AiProvider>('openai');
   const [aiKey, setAiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
+  const [elevenLabsKey, setElevenLabsKey] = useState('');
+  const [showEleven, setShowEleven] = useState(false);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
   const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
@@ -37,6 +39,7 @@ export default function SetupPage() {
       setAiKey(existing.aiKey);
       setProvider(existing.aiProvider);
     }
+    setElevenLabsKey(loadElevenLabsKey());
     setDifficulty(loadDifficulty());
   }, []);
 
@@ -62,7 +65,7 @@ export default function SetupPage() {
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canSubmit) return;
-    saveKeys({ aiKey: aiKey.trim(), aiProvider: provider });
+    saveKeys({ aiKey: aiKey.trim(), aiProvider: provider, elevenLabsKey: elevenLabsKey.trim() });
     saveDifficulty(difficulty);
     router.push(`/${locale}/session`);
   };
@@ -101,7 +104,7 @@ export default function SetupPage() {
             </div>
           </div>
 
-          {/* API Key input */}
+          {/* AI API Key input */}
           <div>
             <label className="block text-sm font-medium mb-2 text-[color:var(--muted)]">
               {currentProvider.label} {t('API Key', 'Clave API', 'Clé API')}
@@ -124,6 +127,40 @@ export default function SetupPage() {
             </div>
             <p className="text-xs text-[color:var(--muted)] mt-1.5">
               {t(`Example: ${currentProvider.example}`, `Ejemplo: ${currentProvider.example}`, `Exemple: ${currentProvider.example}`)}
+            </p>
+          </div>
+
+          {/* ElevenLabs key */}
+          <div>
+            <label className="block text-sm font-medium mb-2 text-[color:var(--muted)] flex items-center gap-1.5">
+              <Volume2 className="w-3.5 h-3.5" />
+              {t('ElevenLabs Voice Key', 'Clave de Voz ElevenLabs', 'Clé Voix ElevenLabs')}
+              <span className="text-xs font-normal opacity-60">
+                ({t('optional — for AI voice', 'opcional — para voz IA', 'optionnel — pour voix IA')})
+              </span>
+            </label>
+            <div className="relative">
+              <input
+                type={showEleven ? 'text' : 'password'}
+                value={elevenLabsKey}
+                onChange={(e) => setElevenLabsKey(e.target.value)}
+                placeholder="sk_..."
+                className="w-full px-4 py-3 pr-12 rounded-lg bg-[color:var(--card)] border border-[color:var(--border)] focus:border-boxing-red focus:outline-none transition-all text-[color:var(--text)] placeholder:text-[color:var(--muted)]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowEleven((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted)] hover:text-[color:var(--text)] transition-colors"
+              >
+                {showEleven ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
+            <p className="text-xs text-[color:var(--muted)] mt-1.5">
+              {t(
+                'Without it the coach uses your browser\'s built-in voice.',
+                'Sin ella el coach usa la voz nativa del navegador.',
+                'Sans elle, le coach utilise la voix native du navigateur.'
+              )}
             </p>
           </div>
 
@@ -189,9 +226,9 @@ export default function SetupPage() {
 
           <p className="text-xs text-[color:var(--muted)]">
             {t(
-              'Your API key is stored in localStorage on this device only.',
-              'Tu clave API se guarda en localStorage solo en este dispositivo.',
-              'Votre clé API est stockée en localStorage sur cet appareil uniquement.'
+              'Keys are stored in localStorage on this device only.',
+              'Las claves se guardan en localStorage solo en este dispositivo.',
+              'Les clés sont stockées en localStorage sur cet appareil uniquement.'
             )}
           </p>
         </div>

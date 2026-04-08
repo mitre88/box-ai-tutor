@@ -13,6 +13,7 @@ interface VoiceCoachProps {
   aiKey: string;
   aiProvider: AiProvider;
   elevenLabsKey: string;
+  locale: string;
 }
 
 interface Drill {
@@ -84,7 +85,53 @@ const POST_ROUND_CHECKLIST = [
   'Small sip of water if needed'
 ];
 
-export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCoachProps) {
+const LANG_NAME: Record<string, string> = {
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+};
+
+// Localized spoken strings for the coach
+const COACH_STRINGS = {
+  welcome: {
+    en: (drill: string) => `Welcome to Fight Corner. I'm watching your form. Let's start with ${drill}. Get in your stance.`,
+    es: (drill: string) => `Bienvenido a Fight Corner. Estoy observando tu técnica. Empecemos con ${drill}. Adopta tu guardia.`,
+    fr: (drill: string) => `Bienvenue à Fight Corner. J'observe votre technique. Commençons par ${drill}. Prenez votre garde.`,
+  },
+  drillStart: {
+    en: (drill: string, desc: string) => `${drill}. ${desc}. Ready? Let's go!`,
+    es: (drill: string, desc: string) => `${drill}. ${desc}. ¿Listo? ¡Vamos!`,
+    fr: (drill: string, desc: string) => `${drill}. ${desc}. Prêt? Allez!`,
+  },
+  sessionComplete: {
+    en: () => "Excellent work! Session complete. You're getting stronger every round.",
+    es: () => '¡Excelente trabajo! Sesión completa. Te estás haciendo más fuerte cada ronda.',
+    fr: () => 'Excellent travail! Session terminée. Vous progressez à chaque round.',
+  },
+  sessionEnd: {
+    en: () => "Session ended early. Great effort! Come back stronger next time.",
+    es: () => 'Sesión terminada antes. ¡Gran esfuerzo! Vuelve más fuerte la próxima vez.',
+    fr: () => 'Session terminée tôt. Bel effort! Revenez plus fort la prochaine fois.',
+  },
+  ready: {
+    en: 'Ready to train? Enable your camera and press start when you are.',
+    es: '¿Listo para entrenar? Activa la cámara y presiona inicio cuando estés listo.',
+    fr: "Prêt à vous entraîner? Activez la caméra et appuyez sur démarrer.",
+  },
+};
+
+function getCoachStr(locale: string) {
+  const l = ['en', 'es', 'fr'].includes(locale) ? locale : 'en';
+  return {
+    welcome: (drill: string) => (COACH_STRINGS.welcome as any)[l](drill),
+    drillStart: (drill: string, desc: string) => (COACH_STRINGS.drillStart as any)[l](drill, desc),
+    sessionComplete: () => (COACH_STRINGS.sessionComplete as any)[l](),
+    sessionEnd: () => (COACH_STRINGS.sessionEnd as any)[l](),
+    ready: (COACH_STRINGS.ready as any)[l],
+  };
+}
+
+export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey, locale }: VoiceCoachProps) {
   const [difficulty, setDifficulty] = useState<Difficulty>('intermediate');
   const [drills, setDrills] = useState<Drill[]>(DRILLS_BY_DIFFICULTY.intermediate);
   const [isActive, setIsActive] = useState(false);
@@ -94,7 +141,8 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [sessionComplete, setSessionComplete] = useState(false);
-  const [coachMessage, setCoachMessage] = useState('Ready to train? Enable your camera and press start when you are.');
+  const cs = getCoachStr(locale);
+  const [coachMessage, setCoachMessage] = useState(() => getCoachStr(locale).ready);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisFeedback, setAnalysisFeedback] = useState<string | null>(null);
   const [feedbackTone, setFeedbackTone] = useState<'good' | 'adjust' | 'neutral'>('neutral');
@@ -187,9 +235,10 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = 1.05;
         utterance.pitch = 0.9;
+        utterance.lang = locale === 'es' ? 'es-ES' : locale === 'fr' ? 'fr-FR' : 'en-US';
         const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(v => v.lang.startsWith('en') && v.name.includes('Samantha'))
-          || voices.find(v => v.lang.startsWith('en') && v.localService)
+        const preferred = voices.find(v => v.lang.startsWith(locale) && v.localService)
+          || voices.find(v => v.lang.startsWith(locale))
           || voices.find(v => v.lang.startsWith('en'));
         if (preferred) utterance.voice = preferred;
         utterance.onend = () => resolve();
@@ -212,8 +261,8 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
     setIsSpeaking(true);
 
     try {
-      // If ElevenLabs already failed, go straight to native TTS
-      if (elevenLabsFailedRef.current) {
+      // If no key or ElevenLabs already failed, go straight to native TTS
+      if (elevenLabsFailedRef.current || !elevenLabsKey) {
         await speakNative(text);
         setIsSpeaking(false);
         return;
@@ -228,10 +277,10 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
         },
         body: JSON.stringify({
           text,
-          model_id: 'eleven_monolingual_v1',
+          model_id: 'eleven_multilingual_v2',
           voice_settings: {
-            stability: 0.35,
-            similarity_boost: 0.8
+            stability: 0.40,
+            similarity_boost: 0.75
           }
         })
       });
@@ -274,6 +323,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
   }, [elevenLabsKey, speakNative]);
 
   const fetchCoachReply = useCallback(async (prompt: string) => {
+    const lang = LANG_NAME[locale] || 'English';
     const response = await fetch('/api/ai/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -283,7 +333,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
         messages: [
           {
             role: 'system',
-            content: `You are a boxing coach. ${STYLE_PRESETS[stylePreset].prompt} ${DIFFICULTY_COACH_PROMPT[difficulty]} Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation.`
+            content: `You are a boxing coach. ${STYLE_PRESETS[stylePreset].prompt} ${DIFFICULTY_COACH_PROMPT[difficulty]} Give concise, energetic feedback in 1-2 sentences. Focus on form, breathing, and motivation. IMPORTANT: You must always respond in ${lang}. Never switch languages.`
           },
           {
             role: 'user',
@@ -298,8 +348,13 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
     }
 
     const data = await response.json();
-    return data?.reply || 'Keep moving with purpose and stay relaxed in the shoulders.';
-  }, [aiKey, aiProvider, stylePreset, difficulty]);
+    const defaults: Record<string, string> = {
+      es: 'Sigue moviéndote con propósito. Relaja los hombros.',
+      fr: 'Continuez à bouger avec intention. Détendez les épaules.',
+      en: 'Keep moving with purpose and stay relaxed in the shoulders.',
+    };
+    return data?.reply || defaults[locale] || defaults.en;
+  }, [aiKey, aiProvider, locale, stylePreset, difficulty]);
 
   const storeSessionRecap = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -362,7 +417,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
     if (currentDrillIndex >= drills.length - 1) {
       setSessionComplete(true);
       setIsActive(false);
-      setCoachMessage('Excellent work! Session complete. You\'re getting stronger every round.');
+      setCoachMessage(cs.sessionComplete());
       storeSessionRecap();
       return;
     }
@@ -386,9 +441,10 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
   };
 
   const announceDrill = (drill: Drill, autoPlay: boolean = false) => {
-    setCoachMessage(`${drill.name}. ${drill.description}. Ready? Let's go!`);
+    const msg = cs.drillStart(drill.name, drill.description);
+    setCoachMessage(msg);
     if (autoPlay) {
-      speakText(`${drill.name}. ${drill.description}. Ready? Let's go!`);
+      speakText(msg);
     }
   };
 
@@ -396,7 +452,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
     setIsActive(true);
     setIsPaused(false);
     playBell();
-    const welcome = `Welcome to Fight Corner. I'm watching your form. Let's start with ${currentDrill.name}. Get in your stance.`;
+    const welcome = cs.welcome(currentDrill.name);
     setCoachMessage(welcome);
     speakText(welcome);
   };
@@ -408,7 +464,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
   const endSession = () => {
     setIsActive(false);
     setSessionComplete(true);
-    setCoachMessage('Session ended early. Great effort! Come back stronger next time.');
+    setCoachMessage(cs.sessionEnd());
     storeSessionRecap();
   };
 
@@ -419,7 +475,7 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
     setCurrentDrillIndex(0);
     setTimeRemaining(drills[0].duration);
     setElapsedSeconds(0);
-    setCoachMessage('Ready to train? Enable your camera and press start when you are.');
+    setCoachMessage(cs.ready);
     setAnalysisFeedback(null);
     setFeedbackTone('neutral');
     setFeedbackLabel(null);
@@ -554,10 +610,10 @@ export default function VoiceCoach({ aiKey, aiProvider, elevenLabsKey }: VoiceCo
             <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-500'}`} />
             <span className="text-xs text-[color:var(--muted)]">{isActive ? 'Coach Active' : 'Standby'}</span>
           </div>
-          <div className={`flex items-center gap-2 bg-[color:var(--card)] border px-3 py-1 rounded-full ${ttsEngine === 'native' ? 'border-amber-400/40' : 'border-[color:var(--border)]'}`}>
-            <AudioLines className={`w-3 h-3 ${ttsEngine === 'native' ? 'text-amber-400' : 'text-boxing-red'}`} />
+          <div className={`flex items-center gap-2 bg-[color:var(--card)] border px-3 py-1 rounded-full ${(!elevenLabsKey || ttsEngine === 'native') ? 'border-amber-400/40' : 'border-[color:var(--border)]'}`}>
+            <AudioLines className={`w-3 h-3 ${(!elevenLabsKey || ttsEngine === 'native') ? 'text-amber-400' : 'text-boxing-red'}`} />
             <span className="text-xs text-[color:var(--muted)]">
-              {ttsEngine === 'native' ? 'Voice (Browser)' : 'Voice'} {voiceStatus}
+              {!elevenLabsKey || ttsEngine === 'native' ? 'Voice (Browser)' : 'ElevenLabs'} · {voiceStatus}
             </span>
           </div>
         </div>
